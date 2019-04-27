@@ -1,3 +1,7 @@
+use std::env;
+
+mod graph;
+
 fn main() {
-    println!("Hello, world!");
+    let args: Vec<String> = env::args().collect();
 }
