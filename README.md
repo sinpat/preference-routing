@@ -7,5 +7,4 @@ Specification of Trajectories and Learning of User Preferences
 
 ## Run
 
-`./target/release/preference-routing` 
-
+`./target/release/preference-routing --path_to_graph_file --source_node_id --target_node_id` 
