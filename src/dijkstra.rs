@@ -6,5 +6,6 @@ struct State {
 }
 
 pub fn find_shortest_path(graph: graph::Graph, source: usize, target: usize) -> Option<(Vec<usize>, f64)> {
+    println!("Running Dijkstra search...");
     None
 }

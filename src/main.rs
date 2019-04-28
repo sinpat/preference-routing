@@ -9,7 +9,6 @@ fn main() -> Result<(), ParseIntError> {
     if args.len() < 4 {
         panic!("There are parameters missing");
     }
-    println!("Parsing graph...");
     let graph = match graph::parse_graph_file(&args[1]) {
         Ok(graph) => graph,
         Err(e) => panic!(e)
