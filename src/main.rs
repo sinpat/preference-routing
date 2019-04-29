@@ -9,13 +9,11 @@ fn main() -> Result<(), ParseIntError> {
     if args.len() < 4 {
         panic!("There are parameters missing");
     }
-    let graph = match graph::parse_graph_file(&args[1]) {
-        Ok(graph) => graph,
-        Err(e) => panic!(e)
-    };
+    let graph =  graph::parse_graph_file(&String::from("./src/testGraph")/*&args[1]*/).unwrap() ;
     let source_id: usize = args[2].parse()?;
     let target_id: usize = args[3].parse()?;
-    let find = dijkstra::find_shortest_path(graph, source_id, target_id);
+    println!("{:?}", graph);
+    let find = dijkstra::find_shortest_path(&graph, source_id, target_id);
     match find {
         Some(route) => {
             for node in route.0 {
