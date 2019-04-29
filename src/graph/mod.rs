@@ -2,41 +2,15 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::io::BufReader;
 
+mod edge;
+mod node;
+
+use edge::{ Edge, HalfEdge };
+use node::Node;
+
 const NODE_TOKENS: usize = 6;
 const EDGE_TOKENS: usize = 4;
-const COST_DIMENSION: usize = 1;
-
-
-
-#[derive(Debug)]
-pub struct Node {
-    id: usize,
-    lat: f64,
-    long: f64,
-    height: f64,
-    ch_level: usize
-}
-
-#[derive(Debug)]
-struct HalfEdge {
-    target_id: usize,
-    edge_costs: [f64; COST_DIMENSION]
-}
-
-#[derive(Debug)]
-pub struct Edge {
-    source_id: usize,
-    pub target_id: usize,
-    edge_costs: [usize; COST_DIMENSION], // change back to float
-    repl_edge_1: isize,
-    repl_edge_2: isize
-}
-
-impl Edge {
-    pub fn calc_costs(&self) -> usize {
-        self.edge_costs[0]
-    }
-}
+const COST_DIMENSION: usize = 1; // doubled in edge!
 
 #[derive(Debug)]
 pub struct Graph {
@@ -82,28 +56,26 @@ pub fn parse_graph_file(file_path: &String) -> Result<Graph, Box<dyn std::error:
             continue;
         }
         if tokens.len() == NODE_TOKENS {
-            let new_node = Node {
-                id: tokens[0].parse()?,
-                lat: tokens[2].parse()?,
-                long: tokens[3].parse()?,
-                height: tokens[4].parse()?,
-                ch_level: tokens[5].parse()?
-            };
-            nodes.push(new_node);
+            nodes.push(Node::new(
+                tokens[0].parse()?,
+                tokens[2].parse()?,
+                tokens[3].parse()?,
+                tokens[4].parse()?,
+                tokens[5].parse()?
+            ));
         } else if tokens.len() == EDGE_TOKENS + COST_DIMENSION {
             let source_id = tokens[0].parse()?;
             if source_id != last_edge_source {
                 offsets_out[source_id] = edges.len();
                 last_edge_source = source_id;
             }
-            let new_edge = Edge {
+            edges.push(Edge::new(
                 source_id,
-                target_id: tokens[1].parse()?,
-                edge_costs: [tokens[2].parse()?], // eigene Methode: mit for-loop durchgehen
-                repl_edge_1: tokens[3].parse()?,
-                repl_edge_2: tokens[4].parse()?
-            };
-            edges.push(new_edge);
+                tokens[1].parse()?,
+                [tokens[2].parse()?], // eigene Methode: mit for-loop durchgehen
+                tokens[3].parse()?,
+                tokens[4].parse()?
+            ));
         } else {
             println!("Invalid format: {:?}", line);
         }

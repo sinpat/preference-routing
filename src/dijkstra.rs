@@ -2,10 +2,12 @@ use crate::graph::Graph;
 use std::collections::binary_heap::BinaryHeap;
 use std::cmp::Ordering;
 
+use ordered_float::{OrderedFloat};
+
 #[derive(PartialEq)]
 struct State {
     node_id: usize,
-    cost: usize // change back to float
+    cost: OrderedFloat<f64>
 }
 
 impl std::cmp::Eq for State {}
@@ -22,14 +24,14 @@ impl std::cmp::PartialOrd for State {
     }
 }
 
-pub fn find_shortest_path(graph: &Graph, source: usize, target: usize) -> Option<(Vec<usize>, usize)> {
+pub fn find_shortest_path(graph: &Graph, source: usize, target: usize) -> Option<(Vec<usize>, OrderedFloat<f64>)> {
     println!("Running Dijkstra search...");
-    let mut dist = vec![(std::usize::MAX, None); graph.nodes.len()];
+    let mut dist = vec![(OrderedFloat(std::f64::NAN), None); graph.nodes.len()];
     let mut heap = BinaryHeap::new();
-    dist[source] = (0, None);
+    dist[source] = (OrderedFloat(0.0), None);
     heap.push(State {
         node_id: source,
-        cost: 0
+        cost: OrderedFloat(0.0)
     });
     while let Some(State { node_id, cost }) = heap.pop() {
         if node_id == target {
@@ -49,7 +51,7 @@ pub fn find_shortest_path(graph: &Graph, source: usize, target: usize) -> Option
         for edge in graph.get_edges(node_id) {
             let next = State {
                 node_id: edge.target_id,
-                cost: cost + edge.calc_costs()
+                cost: /*cost + edge.calc_costs()*/ OrderedFloat(0.0)
             };
             if next.cost < dist[next.node_id].0 {
                 dist[next.node_id] = (next.cost, Some(node_id));
