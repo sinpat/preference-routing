@@ -24,13 +24,13 @@ pub struct Graph {
 
 impl Graph {
     fn new(nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
-        let mut offsets_out: Vec<usize> = vec![edges.len(); nodes.len() + 1];
+        let mut offsets_out: Vec<usize> = vec![0; nodes.len() + 1];
         offsets_out[0] = 0;
-        for (index, edge) in edges.iter().enumerate() {
-            if edge.get_source_id() == 0 {
-                continue;
-            }
-            offsets_out[edge.get_source_id()] = index;
+        for edge in &edges {
+            offsets_out[edge.get_source_id() + 1] += 1;
+        }
+        for index in 0..offsets_out.len() - 1 {
+            offsets_out[index + 1] += offsets_out[index];
         }
         Graph {
             nodes,
