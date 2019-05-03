@@ -32,6 +32,14 @@ impl Edge {
     pub fn get_target_id(&self) -> usize {
         self.target_id
     }
+
+    pub fn calc_costs(&self) -> OrderedFloat<f64> {
+        let mut costs = OrderedFloat(0.0);
+        for single_cost in &self.edge_costs {
+            costs = OrderedFloat(costs.0 + single_cost.0);
+        }
+        costs
+    }
 }
 
 #[derive(Debug)]
