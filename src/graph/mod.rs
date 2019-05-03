@@ -8,13 +8,9 @@ mod node;
 use edge::{ Edge, HalfEdge };
 use node::Node;
 
-const NODE_TOKENS: usize = 6;
-const EDGE_TOKENS: usize = 4;
-const COST_DIMENSION: usize = 1; // doubled in edge!
-
 #[derive(Debug)]
 pub struct Graph {
-    pub nodes: Vec<Node>,
+    nodes: Vec<Node>,
     edges: Vec<Edge>,
     half_edges_in: Vec<HalfEdge>,
     half_edges_out: Vec<HalfEdge>,
@@ -42,6 +38,10 @@ impl Graph {
         }
     }
 
+    pub fn get_nodes(&self) -> &Vec<Node> {
+        &self.nodes
+    }
+
     pub fn get_edges(&self, node_id: usize) -> &[Edge] {
         &self.edges[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
     }
@@ -54,31 +54,34 @@ pub fn parse_graph_file(file_path: &String) -> Result<Graph, Box<dyn std::error:
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
-    while let Some(Ok(line)) = lines.next() {
-        // iterator lassen und mit next() durchgehen
+    for _i in 0..5 {
+        // comments and blanks
+        lines.next();
+    }
+    let num_of_nodes = lines.next().unwrap().unwrap().parse().unwrap();
+    let num_of_edges = lines.next().unwrap().unwrap().parse().unwrap();
+    for _i in 0..num_of_nodes {
+        let line = lines.next().unwrap().unwrap();
         let tokens: Vec<&str> = line.split(" ").collect();
-        if tokens[0] == "#" || tokens.len() == 1 {
-            continue;
-        }
-        if tokens.len() == NODE_TOKENS {
-            nodes.push(Node::new(
-                tokens[0].parse()?,
-                tokens[2].parse()?,
-                tokens[3].parse()?,
-                tokens[4].parse()?,
-                tokens[5].parse()?
-            ));
-        } else if tokens.len() == EDGE_TOKENS + COST_DIMENSION {
-            edges.push(Edge::new(
-                tokens[0].parse()?,
-                tokens[1].parse()?,
-                [tokens[2].parse()?], // eigene Methode: mit for-loop durchgehen
-                tokens[3].parse()?,
-                tokens[4].parse()?
-            ));
-        } else {
-            println!("Invalid format: {:?}", line);
-        }
+        nodes.push(Node::new(
+            tokens[0].parse()?,
+            tokens[2].parse()?,
+            tokens[3].parse()?,
+            tokens[4].parse()?,
+            tokens[5].parse()?
+        ));
+    }
+    for index in 0..num_of_edges {
+        let line = lines.next().unwrap().unwrap();
+        let tokens: Vec<&str> = line.split(" ").collect();
+        edges.push(Edge::new(
+            index,
+            tokens[0].parse()?,
+            tokens[1].parse()?,
+            edge::parse_costs(&tokens[2..tokens.len() - 2]),
+            tokens[tokens.len() - 2].parse()?,
+            tokens[tokens.len() - 1].parse()?
+        ));
     }
     Ok(Graph::new(nodes, edges))
 }

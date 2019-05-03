@@ -26,7 +26,7 @@ impl std::cmp::PartialOrd for State {
 
 pub fn find_shortest_path(graph: &Graph, source: usize, target: usize) -> Option<(Vec<usize>, OrderedFloat<f64>)> {
     println!("Running Dijkstra search...");
-    let mut dist = vec![(OrderedFloat(std::f64::NAN), None); graph.nodes.len()];
+    let mut dist = vec![(OrderedFloat(std::f64::NAN), None); graph.get_nodes().len()];
     let mut heap = BinaryHeap::new();
     dist[source] = (OrderedFloat(0.0), None);
     heap.push(State {
