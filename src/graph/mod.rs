@@ -47,7 +47,7 @@ impl Graph {
     }
 }
 
-pub fn parse_graph_file(file_path: &String) -> Result<Graph, Box<dyn std::error::Error>> {
+pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Error>> {
     println!("Parsing graph...");
     let mut nodes: Vec<Node> = Vec::new();
     let mut edges: Vec<Edge> = Vec::new();
@@ -62,7 +62,7 @@ pub fn parse_graph_file(file_path: &String) -> Result<Graph, Box<dyn std::error:
     let num_of_edges = lines.next().unwrap().unwrap().parse().unwrap();
     for _i in 0..num_of_nodes {
         let line = lines.next().unwrap().unwrap();
-        let tokens: Vec<&str> = line.split(" ").collect();
+        let tokens: Vec<&str> = line.split(' ').collect();
         nodes.push(Node::new(
             tokens[0].parse()?,
             tokens[2].parse()?,
@@ -73,7 +73,7 @@ pub fn parse_graph_file(file_path: &String) -> Result<Graph, Box<dyn std::error:
     }
     for index in 0..num_of_edges {
         let line = lines.next().unwrap().unwrap();
-        let tokens: Vec<&str> = line.split(" ").collect();
+        let tokens: Vec<&str> = line.split(' ').collect();
         edges.push(Edge::new(
             index,
             tokens[0].parse()?,
