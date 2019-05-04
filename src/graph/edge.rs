@@ -40,14 +40,6 @@ impl Edge {
     pub fn get_edge_costs(&self) -> [OrderedFloat<f64>; EDGE_COST_DIMENSION] {
         self.edge_costs
     }
-
-    pub fn calc_costs(&self) -> OrderedFloat<f64> {
-        let mut costs = OrderedFloat(0.0);
-        for single_cost in &self.edge_costs {
-            costs = OrderedFloat(costs.0 + single_cost.0);
-        }
-        costs
-    }
 }
 
 #[derive(Debug)]
