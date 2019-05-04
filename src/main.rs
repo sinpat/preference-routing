@@ -3,6 +3,7 @@ use std::num::ParseIntError;
 
 mod graph;
 mod dijkstra;
+mod tests;
 
 fn main() -> Result<(), ParseIntError> {
     let args: Vec<String> = env::args().collect();
