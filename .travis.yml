@@ -2,11 +2,10 @@ language: rust
 rust:
   - stable
   - beta
-  - nightly
-matrix:
-  allow_failures:
-    - rust: nightly
 cache: cargo
+before_script:
+  - rustup component add clippy
 script:
+  - cargo clippy
   - cargo build --verbose --all
   - cargo test --verbose --all
