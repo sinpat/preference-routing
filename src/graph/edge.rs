@@ -1,6 +1,6 @@
 use ordered_float::OrderedFloat;
 
-const COST_DIMENSION: usize = 1;
+const COST_DIMENSION: usize = 5;
 
 pub fn parse_costs(tokens: &[&str]) -> [OrderedFloat<f64>; COST_DIMENSION] {
     let mut edge_costs: [OrderedFloat<f64>; COST_DIMENSION] = [OrderedFloat(0.0); COST_DIMENSION];
