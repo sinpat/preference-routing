@@ -16,9 +16,7 @@ fn main() -> Result<(), ParseIntError> {
     let find = dijkstra::find_shortest_path(&graph, source_id, target_id);
     match find {
         Some(route) => {
-            for node in route.0 {
-                println!("{:?}", node);
-            }
+            println!("{:?}", route.0);
             println!("Total cost: {:?}", route.1);
         },
         None => println!("No route found")

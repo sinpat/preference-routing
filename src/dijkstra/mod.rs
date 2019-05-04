@@ -13,6 +13,7 @@ struct State {
 impl std::cmp::Eq for State {}
 
 impl std::cmp::Ord for State {
+    // switch comparison, because we want a min-heap
     fn cmp(&self, other: &Self) -> Ordering {
         other.cost.cmp(&self.cost)
     }
@@ -24,6 +25,7 @@ impl std::cmp::PartialOrd for State {
     }
 }
 
+// find shortest path by doing a dijkstra search
 pub fn find_shortest_path(graph: &Graph, source: usize, target: usize) -> Option<(Vec<usize>, OrderedFloat<f64>)> {
     println!("Running Dijkstra search...");
     let mut dist = vec![(OrderedFloat(std::f64::NAN), None); graph.get_nodes().len()];
@@ -35,6 +37,7 @@ pub fn find_shortest_path(graph: &Graph, source: usize, target: usize) -> Option
     });
     while let Some(State { node_id, cost }) = heap.pop() {
         if node_id == target {
+            // unfold path recursively
             let mut path = Vec::new();
             let mut current_dist = dist[target];
             path.push(target);
