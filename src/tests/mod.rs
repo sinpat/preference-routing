@@ -1,4 +1,5 @@
 mod parsing;
+mod routing;
 
 // Defines a few tests to show the basic testing utils
 
