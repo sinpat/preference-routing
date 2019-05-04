@@ -42,8 +42,12 @@ impl Graph {
         &self.nodes
     }
 
-    pub fn get_edges(&self, node_id: usize) -> &[Edge] {
-        &self.edges[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
+    pub fn get_edges(&self) -> &Vec<Edge> {
+        &self.edges
+    }
+
+    pub fn get_edges_out(&self, starting_node: usize) -> &[Edge] {
+        &self.edges[self.offsets_out[starting_node]..self.offsets_out[starting_node + 1]]
     }
 }
 

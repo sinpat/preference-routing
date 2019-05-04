@@ -10,8 +10,7 @@ fn main() -> Result<(), ParseIntError> {
     if args.len() < 4 {
         panic!("There are parameters missing");
     }
-    let graph =  graph::parse_graph_file("./src/testGraph").unwrap();
-    // let graph = graph::parse_graph_file(&args[1]).unwrap();
+    let graph = graph::parse_graph_file(&args[1]).unwrap();
     let source_id: usize = args[2].parse()?;
     let target_id: usize = args[3].parse()?;
     println!("{:?}", graph);

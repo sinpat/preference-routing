@@ -48,7 +48,7 @@ pub fn find_shortest_path(graph: &Graph, source: usize, target: usize) -> Option
         if cost > dist[node_id].0 {
             continue
         }
-        for edge in graph.get_edges(node_id) {
+        for edge in graph.get_edges_out(node_id) {
             let next = State {
                 node_id: edge.get_target_id(),
                 cost: OrderedFloat(cost.0 + edge.calc_costs().0)
