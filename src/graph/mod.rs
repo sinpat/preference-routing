@@ -21,23 +21,29 @@ pub struct Graph {
 }
 
 impl Graph {
-    fn new(nodes: Vec<Node>, edges: Vec<Edge>) -> Graph {
+    fn new(nodes: Vec<Node>, mut edges: Vec<Edge>) -> Graph {
+        println!("Constructing graph...");
         let mut offsets_out: Vec<usize> = vec![0; nodes.len() + 1];
-        offsets_out[0] = 0;
+        let mut offsets_in: Vec<usize> = vec![0; nodes.len() + 1];
+        let mut half_edges_out: Vec<HalfEdge> = Vec::new();
+        let mut half_edges_in: Vec<HalfEdge> = Vec::new();
+
+        edges.sort_by(|a, b| a.get_source_id().cmp(&b.get_source_id()));
         for edge in &edges {
             offsets_out[edge.get_source_id() + 1] += 1;
+            half_edges_out.push(HalfEdge::new(edge.get_target_id(), edge.get_edge_costs()));
         }
-        for index in 0..offsets_out.len() - 1 {
-            offsets_out[index + 1] += offsets_out[index];
+        edges.sort_by(|a, b| a.get_target_id().cmp(&b.get_target_id()));
+        for edge in &edges {
+            offsets_in[edge.get_target_id() + 1] += 1;
+            half_edges_in.push(HalfEdge::new(edge.get_source_id(), edge.get_edge_costs()));
         }
-        Graph {
-            nodes,
-            edges,
-            half_edges_in: Vec::new(),
-            half_edges_out: Vec::new(),
-            offsets_in: Vec::new(),
-            offsets_out
+        for index in 1..offsets_out.len() {
+            offsets_out[index] += offsets_out[index - 1];
+            offsets_in[index] += offsets_in[index - 1];
         }
+        edges.sort_by(|a, b| a.get_id().cmp(&b.get_id()));
+        Graph { nodes, edges, half_edges_in, half_edges_out, offsets_in, offsets_out }
     }
 
     pub fn get_nodes(&self) -> &Vec<Node> {
@@ -48,8 +54,20 @@ impl Graph {
         &self.edges
     }
 
-    pub fn get_edges_out(&self, starting_node: usize) -> &[Edge] {
-        &self.edges[self.offsets_out[starting_node]..self.offsets_out[starting_node + 1]]
+    pub fn get_edges_out(&self, node_id: usize) -> &[HalfEdge] {
+        &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
+    }
+
+    pub fn get_edges_in(&self, node_id: usize) -> &[HalfEdge] {
+        &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
+    }
+
+    pub fn get_offsets_out(&self) -> &Vec<usize> {
+        &self.offsets_out
+    }
+
+    pub fn get_offsets_in(&self) -> &Vec<usize> {
+        &self.offsets_in
     }
 }
 

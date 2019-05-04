@@ -13,7 +13,6 @@ fn main() -> Result<(), ParseIntError> {
     let graph = graph::parse_graph_file(&args[1]).unwrap();
     let source_id: usize = args[2].parse()?;
     let target_id: usize = args[3].parse()?;
-    println!("{:?}", graph);
     let find = dijkstra::find_shortest_path(&graph, source_id, target_id);
     match find {
         Some(route) => {
