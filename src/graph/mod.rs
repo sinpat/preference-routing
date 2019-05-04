@@ -8,6 +8,8 @@ mod node;
 use edge::{ Edge, HalfEdge };
 use node::Node;
 
+const EDGE_COST_DIMENSION: usize = 5;
+
 #[derive(Debug)]
 pub struct Graph {
     nodes: Vec<Node>,
