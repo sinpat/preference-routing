@@ -1,8 +1,10 @@
 mod parsing;
 mod routing;
 
-// Defines a few tests to show the basic testing utils
+const TEST_GRAPH: &str = "./src/tests/graphs/testGraph";
+const CONCAT_TEST_GRAPH: &str = "./src/tests/graphs/concatTestGraph";
 
+// Defines a few tests to show the basic testing utils
 #[test]
 fn test_1() {
     assert_eq!(22, 22);

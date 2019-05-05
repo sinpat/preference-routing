@@ -1,8 +1,10 @@
 use crate::graph::{ parse_graph_file, Graph };
 use crate::dijkstra::Dijkstra;
+use super::{ TEST_GRAPH, CONCAT_TEST_GRAPH };
+use ordered_float::OrderedFloat;
 
 fn get_graph() -> Graph {
-    parse_graph_file("./src/tests/graph_files/offset_test_graph").unwrap()
+    parse_graph_file(TEST_GRAPH).unwrap()
 }
 
 #[test]
@@ -28,17 +30,39 @@ fn from_one_way() {
 fn normal_case() {
     let graph = get_graph();
     let mut dijkstra = Dijkstra::new(&graph);
+    let mut shortest_path;
+    let mut path;
+    let mut expected_path: Vec<usize>;
+
     // first query
-    let mut shortest_path = dijkstra.find_shortest_path(0, 1);
-    assert!(shortest_path.is_some());
-    let mut path = shortest_path.unwrap().0;
-    let mut exp_path: Vec<usize> = vec![0, 1].into();
-    assert_eq!(exp_path, path);
+    shortest_path = dijkstra.find_shortest_path(0, 4);
+    assert!(shortest_path.is_none());
 
     // second query
-    shortest_path = dijkstra.find_shortest_path(1, 0);
+    shortest_path = dijkstra.find_shortest_path(4, 11);
+    assert!(shortest_path.is_none());
+
+    // third query
+    shortest_path = dijkstra.find_shortest_path(2, 5);
     assert!(shortest_path.is_some());
-    path = shortest_path.unwrap().0;
-    exp_path = vec![1, 2, 3, 0];
-    assert_eq!(exp_path, path);
+    path = shortest_path.unwrap();
+    expected_path = vec![2, 4, 5];
+    assert_eq!(expected_path, path.0);
+    assert_eq!(OrderedFloat(2.0), path.1);
+
+    // fourth query
+    shortest_path = dijkstra.find_shortest_path(2, 10);
+    assert!(shortest_path.is_some());
+    path = shortest_path.unwrap();
+    expected_path = vec![2, 4, 5, 7, 10];
+    assert_eq!(expected_path, path.0);
+    assert_eq!(OrderedFloat(4.0), path.1);
+
+    // fifth query
+    shortest_path = dijkstra.find_shortest_path(6, 10);
+    assert!(shortest_path.is_some());
+    path = shortest_path.unwrap();
+    expected_path = vec![6, 4, 5, 7, 10];
+    assert_eq!(expected_path, path.0);
+    assert_eq!(OrderedFloat(5.0), path.1);
 }

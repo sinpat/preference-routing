@@ -8,4 +8,4 @@ before_script:
 script:
   - cargo clippy
   - cargo build --verbose --all
-  - cargo test --verbose --all
+  - cargo testGraph --verbose --all
