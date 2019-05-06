@@ -8,7 +8,7 @@ mod node;
 use edge::{ Edge, HalfEdge };
 use node::Node;
 
-const EDGE_COST_DIMENSION: usize = 5;
+const EDGE_COST_DIMENSION: usize = 1;
 
 #[derive(Debug)]
 pub struct Graph {
@@ -78,12 +78,13 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
-    for _i in 0..5 {
+    for _i in 0..4 {
         // comments and blanks
         lines.next();
     }
-    let num_of_nodes = lines.next().unwrap().unwrap().parse().unwrap();
-    let num_of_edges = lines.next().unwrap().unwrap().parse().unwrap();
+    assert_eq!(EDGE_COST_DIMENSION, lines.next().expect("No edge cost dim given")?.parse()?);
+    let num_of_nodes = lines.next().expect("Number of nodes not present in file")?.parse()?;
+    let num_of_edges = lines.next().expect("Number of edges not present in file")?.parse()?;
     for _i in 0..num_of_nodes {
         let line = lines.next().unwrap().unwrap();
         let tokens: Vec<&str> = line.split(' ').collect();
