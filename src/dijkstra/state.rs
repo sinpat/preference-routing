@@ -1,11 +1,15 @@
 use std::cmp::Ordering;
 use ordered_float::OrderedFloat;
 
+#[derive(PartialEq, Copy, Clone)]
+pub enum Direction { FORWARD, BACKWARD }
+
+
 #[derive(PartialEq)]
 pub struct State {
     pub node_id: usize,
     pub cost: OrderedFloat<f64>,
-    pub forward: bool
+    pub direction: Direction
 }
 
 impl std::cmp::Eq for State {}

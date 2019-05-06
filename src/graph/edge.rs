@@ -21,7 +21,14 @@ pub struct Edge {
 }
 
 impl Edge {
-    pub fn new(id: usize, source_id: usize, target_id: usize, edge_costs: [OrderedFloat<f64>; EDGE_COST_DIMENSION], repl_edge_1: isize, repl_edge_2: isize) -> Edge {
+    pub fn new(
+        id: usize,
+        source_id: usize,
+        target_id: usize,
+        edge_costs: [OrderedFloat<f64>; EDGE_COST_DIMENSION],
+        repl_edge_1: isize,
+        repl_edge_2: isize
+    ) -> Edge {
         Edge { id, source_id, target_id, edge_costs, repl_edge_1, repl_edge_2 }
     }
 

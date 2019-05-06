@@ -4,6 +4,7 @@ use ordered_float::OrderedFloat;
 
 mod state;
 use state::State;
+use state::Direction::{ FORWARD, BACKWARD };
 
 pub struct Dijkstra<'a> {
     graph: &'a Graph,
@@ -20,43 +21,47 @@ impl<'a> Dijkstra<'a> {
         println!("Running Dijkstra search...");
         self.reset_fields();
         let mut candidates = BinaryHeap::new();
+        // let mut best_node = (None, OrderedFloat(std::f64::MAX));
         let mut last_node = (None, None);
         self.dist_forward[source] = (OrderedFloat(0.0), None);
         self.dist_backward[target] = (OrderedFloat(0.0), None);
-        candidates.push(State { node_id: source, cost: OrderedFloat(0.0), forward: true });
-        candidates.push(State { node_id: target, cost: OrderedFloat(0.0), forward: false });
-        while let Some(State { node_id, cost, forward }) = candidates.pop() {
-            if forward {
-                if cost > self.dist_forward[node_id].0 {
-                    continue;
-                }
-                last_node.0 = Some(node_id);
-                for half_edge in self.graph.get_edges_out(node_id) {
-                    let next = State {
-                        node_id: half_edge.get_target_id(),
-                        cost: OrderedFloat(cost.0 + half_edge.calc_costs().0),
-                        forward
-                    };
-                    if next.cost < self.dist_forward[next.node_id].0 {
-                        self.dist_forward[next.node_id] = (next.cost, Some(node_id));
-                        candidates.push(next);
+        candidates.push(State { node_id: source, cost: OrderedFloat(0.0), direction: FORWARD });
+        candidates.push(State { node_id: target, cost: OrderedFloat(0.0), direction: BACKWARD });
+        while let Some(State { node_id, cost, direction }) = candidates.pop() {
+            match direction {
+                FORWARD => {
+                    if cost > self.dist_forward[node_id].0 {
+                        continue;
                     }
-                }
-            }
-            if !forward {
-                if cost > self.dist_backward[node_id].0 {
-                    continue;
-                }
-                last_node.1 = Some(node_id);
-                for half_edge in self.graph.get_edges_in(node_id) {
-                    let next = State {
-                        node_id: half_edge.get_target_id(),
-                        cost: OrderedFloat(cost.0 + half_edge.calc_costs().0),
-                        forward
-                    };
-                    if next.cost < self.dist_backward[next.node_id].0 {
-                        self.dist_backward[next.node_id] = (next.cost, Some(node_id));
-                        candidates.push(next);
+                    // if best candidate update, else continue, for both
+                    last_node.0 = Some(node_id);
+                    for half_edge in self.graph.get_edges_out(node_id) {
+                        let next = State {
+                            node_id: half_edge.get_target_id(),
+                            cost: OrderedFloat(cost.0 + half_edge.calc_costs().0),
+                            direction
+                        };
+                        if next.cost < self.dist_forward[next.node_id].0 {
+                            self.dist_forward[next.node_id] = (next.cost, Some(node_id));
+                            candidates.push(next);
+                        }
+                    }
+                },
+                BACKWARD => {
+                    if cost > self.dist_backward[node_id].0 {
+                        continue;
+                    }
+                    last_node.1 = Some(node_id);
+                    for half_edge in self.graph.get_edges_in(node_id) {
+                        let next = State {
+                            node_id: half_edge.get_target_id(),
+                            cost: OrderedFloat(cost.0 + half_edge.calc_costs().0),
+                            direction
+                        };
+                        if next.cost < self.dist_backward[next.node_id].0 {
+                            self.dist_backward[next.node_id] = (next.cost, Some(node_id));
+                            candidates.push(next);
+                        }
                     }
                 }
             }
