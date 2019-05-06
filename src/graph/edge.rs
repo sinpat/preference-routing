@@ -1,4 +1,5 @@
 use ordered_float::OrderedFloat;
+use crate::helpers::add_floats;
 
 use super::EDGE_COST_DIMENSION;
 
@@ -70,7 +71,7 @@ impl HalfEdge {
     pub fn calc_costs(&self) -> OrderedFloat<f64> {
         let mut costs = OrderedFloat(0.0);
         for single_cost in &self.edge_costs {
-            costs = OrderedFloat(costs.0 + single_cost.0);
+            costs = add_floats(costs, *single_cost);
         }
         costs
     }
