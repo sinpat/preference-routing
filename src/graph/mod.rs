@@ -85,28 +85,36 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
     assert_eq!(EDGE_COST_DIMENSION, lines.next().expect("No edge cost dim given")?.parse()?);
     let num_of_nodes = lines.next().expect("Number of nodes not present in file")?.parse()?;
     let num_of_edges = lines.next().expect("Number of edges not present in file")?.parse()?;
-    for _i in 0..num_of_nodes {
-        let line = lines.next().unwrap().unwrap();
-        let tokens: Vec<&str> = line.split(' ').collect();
-        nodes.push(Node::new(
-            tokens[0].parse()?,
-            tokens[2].parse()?,
-            tokens[3].parse()?,
-            tokens[4].parse()?,
-            tokens[5].parse()?
-        ));
-    }
-    for index in 0..num_of_edges {
-        let line = lines.next().unwrap().unwrap();
-        let tokens: Vec<&str> = line.split(' ').collect();
-        edges.push(Edge::new(
-            index,
-            tokens[0].parse()?,
-            tokens[1].parse()?,
-            edge::parse_costs(&tokens[2..tokens.len() - 2]),
-            tokens[tokens.len() - 2].parse()?,
-            tokens[tokens.len() - 1].parse()?
-        ));
+
+    let mut parsed_nodes: usize = 0;
+    let mut parsed_edges: usize = 0;
+    while let Some(Ok(line)) = lines.next() {
+        let tokens: Vec<&str> = line.split(" ").collect();
+        if tokens[0] == "#" || tokens[0] == "\n" {
+            continue;
+        }
+        if parsed_nodes < num_of_nodes {
+            nodes.push(Node::new(
+                tokens[0].parse()?,
+                tokens[2].parse()?,
+                tokens[3].parse()?,
+                tokens[4].parse()?,
+                tokens[5].parse()?
+            ));
+            parsed_nodes += 1;
+        } else if parsed_edges < num_of_edges {
+            edges.push(Edge::new(
+                parsed_edges,
+                tokens[0].parse()?,
+                tokens[1].parse()?,
+                edge::parse_costs(&tokens[2..tokens.len() - 2]),
+                tokens[tokens.len() - 2].parse()?,
+                tokens[tokens.len() - 1].parse()?
+            ));
+            parsed_edges += 1;
+        } else {
+            panic!("Something doesn't add up with the amount of nodes and edges in graph file");
+        }
     }
     Ok(Graph::new(nodes, edges))
 }
