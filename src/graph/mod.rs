@@ -54,12 +54,26 @@ impl Graph {
         &self.edges
     }
 
-    pub fn get_edges_out(&self, node_id: usize) -> &[HalfEdge] {
+    fn get_edges_out(&self, node_id: usize) -> &[HalfEdge] {
         &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
     }
 
-    pub fn get_edges_in(&self, node_id: usize) -> &[HalfEdge] {
+    fn get_edges_in(&self, node_id: usize) -> &[HalfEdge] {
         &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
+    }
+
+    pub fn get_ch_edges_out(&self, node_id: usize) -> &[HalfEdge] {
+        self.get_edges_out(node_id)
+        /*
+        self.get_edges_out(node_id)
+            .into_iter()
+            .filter(|x| self.nodes[x.get_target_id()].get_ch_level() >= self.nodes[node_id].get_ch_level())
+            .collect()
+        */
+    }
+
+    pub fn get_ch_edges_in(&self, node_id: usize) -> &[HalfEdge] {
+        self.get_edges_in(node_id)
     }
 
     pub fn get_offsets_out(&self) -> &Vec<usize> {

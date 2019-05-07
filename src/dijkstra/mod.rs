@@ -36,7 +36,7 @@ impl<'a> Dijkstra<'a> {
                 if merged_cost < best_node.1 {
                     best_node = (Some(node_id), merged_cost);
                 }
-                for half_edge in self.graph.get_edges_out(node_id) {
+                for half_edge in self.graph.get_ch_edges_out(node_id) {
                     let next = State {
                         node_id: half_edge.get_target_id(),
                         cost: add_floats(cost, half_edge.calc_costs()),
@@ -56,7 +56,7 @@ impl<'a> Dijkstra<'a> {
                 if merged_cost < best_node.1 {
                     best_node = (Some(node_id), merged_cost);
                 }
-                for half_edge in self.graph.get_edges_in(node_id) {
+                for half_edge in self.graph.get_ch_edges_in(node_id) {
                     let next = State {
                         node_id: half_edge.get_target_id(),
                         cost: add_floats(cost, half_edge.calc_costs()),
