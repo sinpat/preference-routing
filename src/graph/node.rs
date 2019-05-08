@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct Node {
-    id: usize,
+    pub id: usize,
     lat: f64,
     long: f64,
     height: f64,

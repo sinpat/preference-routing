@@ -21,7 +21,7 @@ pub struct Graph {
 }
 
 impl Graph {
-    fn new(nodes: Vec<Node>, mut edges: Vec<Edge>) -> Graph {
+    fn new(mut nodes: Vec<Node>, mut edges: Vec<Edge>) -> Graph {
         println!("Constructing graph...");
         let mut offsets_out: Vec<usize> = vec![0; nodes.len() + 1];
         let mut offsets_in: Vec<usize> = vec![0; nodes.len() + 1];
@@ -43,6 +43,7 @@ impl Graph {
             offsets_in[index] += offsets_in[index - 1];
         }
         edges.sort_by(|a, b| a.get_id().cmp(&b.get_id()));
+        nodes.sort_by(|a, b| a.id.cmp(&b.id));
         Graph { nodes, edges, half_edges_in, half_edges_out, offsets_in, offsets_out }
     }
 
@@ -82,6 +83,10 @@ impl Graph {
 
     pub fn get_offsets_in(&self) -> &Vec<usize> {
         &self.offsets_in
+    }
+
+    pub fn get_ch_level(&self, node_id: usize) -> usize {
+        self.nodes[node_id].get_ch_level()
     }
 }
 
