@@ -2,6 +2,7 @@ use ordered_float::OrderedFloat;
 use crate::helpers::add_floats;
 
 use super::EDGE_COST_DIMENSION;
+use std::convert::TryInto;
 
 pub fn parse_costs(tokens: &[&str]) -> [OrderedFloat<f64>; EDGE_COST_DIMENSION] {
     let mut edge_costs: [OrderedFloat<f64>; EDGE_COST_DIMENSION] = [OrderedFloat(0.0); EDGE_COST_DIMENSION];
@@ -48,17 +49,26 @@ impl Edge {
     pub fn get_edge_costs(&self) -> [OrderedFloat<f64>; EDGE_COST_DIMENSION] {
         self.edge_costs
     }
+
+    pub fn get_replaced_edges(&self) -> Option<(usize, usize)> {
+        if self.repl_edge_1 == -1 {
+            return None;
+        }
+        Some((self.repl_edge_1.try_into().unwrap(), self.repl_edge_2.try_into().unwrap()))
+    }
 }
 
 #[derive(Debug)]
 pub struct HalfEdge {
+    edge_id: usize,
     target_id: usize,
     edge_costs: [OrderedFloat<f64>; EDGE_COST_DIMENSION]
 }
 
 impl HalfEdge {
-    pub fn new(target_id: usize, edge_costs: [OrderedFloat<f64>; EDGE_COST_DIMENSION]) -> HalfEdge {
+    pub fn new(edge_id: usize, target_id: usize, edge_costs: [OrderedFloat<f64>; EDGE_COST_DIMENSION]) -> HalfEdge {
         HalfEdge {
+            edge_id,
             target_id,
             edge_costs
         }
@@ -67,6 +77,8 @@ impl HalfEdge {
     pub fn get_target_id(&self) -> usize {
         self.target_id
     }
+
+    pub fn get_edge_id(&self) -> usize { self.edge_id }
 
     pub fn calc_costs(&self) -> OrderedFloat<f64> {
         let mut costs = OrderedFloat(0.0);

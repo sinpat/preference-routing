@@ -2,7 +2,7 @@ mod parsing;
 mod routing;
 
 const TEST_GRAPH: &str = "./src/tests/graphs/testGraph";
-const CONCAT_TEST_GRAPH: &str = "./src/tests/graphs/concatTestGraph";
+const CONCAT_TEST_GRAPH: &str = "./src/tests/graphs/concTestGraph";
 
 // Defines a few tests to show the basic testing utils
 #[test]

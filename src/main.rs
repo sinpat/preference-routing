@@ -2,11 +2,10 @@ use std::env;
 use std::num::ParseIntError;
 
 mod graph;
-mod dijkstra;
 mod helpers;
 mod tests;
 
-use dijkstra::Dijkstra;
+use graph::dijkstra::Dijkstra;
 
 fn main() -> Result<(), ParseIntError> {
     let args: Vec<String> = env::args().collect();

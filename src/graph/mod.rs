@@ -4,11 +4,14 @@ use std::io::BufRead;
 
 mod edge;
 mod node;
+pub mod dijkstra;
 
 use edge::{ Edge, HalfEdge };
 use node::Node;
+use dijkstra::state::Direction;
+use Direction::{ FORWARD, BACKWARD };
 
-const EDGE_COST_DIMENSION: usize = 1;
+const EDGE_COST_DIMENSION: usize = 2;
 
 #[derive(Debug)]
 pub struct Graph {
@@ -31,12 +34,12 @@ impl Graph {
         edges.sort_by(|a, b| a.get_source_id().cmp(&b.get_source_id()));
         for edge in &edges {
             offsets_out[edge.get_source_id() + 1] += 1;
-            half_edges_out.push(HalfEdge::new(edge.get_target_id(), edge.get_edge_costs()));
+            half_edges_out.push(HalfEdge::new(edge.get_id(), edge.get_target_id(), edge.get_edge_costs()));
         }
         edges.sort_by(|a, b| a.get_target_id().cmp(&b.get_target_id()));
         for edge in &edges {
             offsets_in[edge.get_target_id() + 1] += 1;
-            half_edges_in.push(HalfEdge::new(edge.get_source_id(), edge.get_edge_costs()));
+            half_edges_in.push(HalfEdge::new(edge.get_id(), edge.get_source_id(), edge.get_edge_costs()));
         }
         for index in 1..offsets_out.len() {
             offsets_out[index] += offsets_out[index - 1];
@@ -87,6 +90,32 @@ impl Graph {
 
     pub fn get_ch_level(&self, node_id: usize) -> usize {
         self.nodes[node_id].get_ch_level()
+    }
+
+    pub fn get_source_id(&self, edge_id: usize) -> usize {
+        self.edges[edge_id].get_source_id()
+    }
+
+    pub fn get_target_id(&self, edge_id: usize) -> usize {
+        self.edges[edge_id].get_target_id()
+    }
+
+    pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<usize> {
+        let mut node_path = vec![source_node];
+        for edge_id in edge_path {
+            node_path.append(&mut self.unpack_edge(edge_id));
+        }
+        node_path
+    }
+
+    fn unpack_edge(&self, edge_id: usize) -> Vec<usize> {
+        let edge = &self.edges[edge_id];
+        if let Some((edge_1, edge_2)) = edge.get_replaced_edges() {
+            let mut relaxed_nodes = self.unpack_edge(edge_1);
+            relaxed_nodes.append(&mut self.unpack_edge(edge_2));
+            return relaxed_nodes;
+        }
+        vec![edge.get_target_id()]
     }
 }
 
