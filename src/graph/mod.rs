@@ -137,7 +137,7 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
     let mut parsed_nodes: usize = 0;
     let mut parsed_edges: usize = 0;
     while let Some(Ok(line)) = lines.next() {
-        let tokens: Vec<&str> = line.split(" ").collect();
+        let tokens: Vec<&str> = line.split_whitespace().collect();
         if tokens[0] == "#" || tokens[0] == "\n" {
             continue;
         }
