@@ -3,13 +3,9 @@ rust:
   - stable
   - beta
 cache: cargo
-addons:
-  sonarcloud:
-    organization: "sinpat-github"
 before_script:
   - rustup component add clippy
 script:
   - cargo clippy
   - cargo build --verbose --all
   - cargo test --verbose --all
-  - sonar-scanner
