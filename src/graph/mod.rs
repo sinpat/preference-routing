@@ -15,8 +15,8 @@ const EDGE_COST_DIMENSION: usize = 2;
 
 #[derive(Debug)]
 pub struct Graph {
-    nodes: Vec<Node>,
-    edges: Vec<Edge>,
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Edge>,
     half_edges_in: Vec<HalfEdge>,
     half_edges_out: Vec<HalfEdge>,
     offsets_in: Vec<usize>,
@@ -89,7 +89,7 @@ impl Graph {
     }
 
     pub fn get_ch_level(&self, node_id: usize) -> usize {
-        self.nodes[node_id].get_ch_level()
+        self.nodes[node_id].ch_level
     }
 
     pub fn get_source_id(&self, edge_id: usize) -> usize {

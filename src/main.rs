@@ -19,7 +19,9 @@ fn main() -> Result<(), ParseIntError> {
     let find = dijkstra.find_shortest_path(source_id, target_id);
     match find {
         Some(route) => {
-            println!("{:?}", route.0);
+            let coords: Vec<[f64; 2]> = route.0.iter().map(|x| [graph.nodes[*x].long, graph.nodes[*x].lat]).collect();
+            println!("Path: {:?}", route.0);
+            println!("Coords: {:?}", coords);
             println!("Total cost: {:?}", route.1);
         },
         None => println!("No route found")
