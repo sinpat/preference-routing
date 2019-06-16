@@ -1,12 +1,13 @@
-use std::env;
-use std::num::ParseIntError;
-
 mod graph;
 mod helpers;
+mod server;
 mod tests;
 
-use graph::dijkstra::Dijkstra;
+fn main() {
+    server::start_server();
+}
 
+/*
 fn main() -> Result<(), ParseIntError> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 4 {
@@ -28,3 +29,4 @@ fn main() -> Result<(), ParseIntError> {
     };
     Ok(())
 }
+*/

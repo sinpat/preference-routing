@@ -1,5 +1,6 @@
 use crate::graph::parse_graph_file;
-use super::{ TEST_GRAPH, CONCAT_TEST_GRAPH };
+
+use super::{CONCAT_TEST_GRAPH, TEST_GRAPH};
 
 #[test]
 fn graph_parsing() {

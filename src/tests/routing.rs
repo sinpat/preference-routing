@@ -1,30 +1,25 @@
-use crate::graph::{ parse_graph_file, Graph };
-use crate::graph::dijkstra::Dijkstra;
-use super::{ TEST_GRAPH, CONCAT_TEST_GRAPH };
 use ordered_float::OrderedFloat;
+
+use crate::graph::{Graph, parse_graph_file};
+use crate::graph::dijkstra::Dijkstra;
+
+use super::{CONCAT_TEST_GRAPH, TEST_GRAPH};
 
 fn get_graph() -> Graph {
     parse_graph_file(CONCAT_TEST_GRAPH).unwrap()
 }
 
 #[test]
-fn from_isolated() {
-}
+fn from_isolated() {}
 
 #[test]
-fn to_isolated() {
-
-}
+fn to_isolated() {}
 
 #[test]
-fn to_one_way() {
-
-}
+fn to_one_way() {}
 
 #[test]
-fn from_one_way() {
-
-}
+fn from_one_way() {}
 
 #[test]
 fn normal_case() {

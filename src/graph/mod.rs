@@ -1,15 +1,13 @@
 use std::fs::File;
-use std::io::BufReader;
 use std::io::BufRead;
+use std::io::BufReader;
+
+use edge::{Edge, HalfEdge};
+use node::Node;
 
 mod edge;
 mod node;
 pub mod dijkstra;
-
-use edge::{ Edge, HalfEdge };
-use node::Node;
-use dijkstra::state::Direction;
-use Direction::{ FORWARD, BACKWARD };
 
 const EDGE_COST_DIMENSION: usize = 2;
 
@@ -20,7 +18,7 @@ pub struct Graph {
     half_edges_in: Vec<HalfEdge>,
     half_edges_out: Vec<HalfEdge>,
     offsets_in: Vec<usize>,
-    offsets_out: Vec<usize>
+    offsets_out: Vec<usize>,
 }
 
 impl Graph {
@@ -130,7 +128,7 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
         // comments and blanks
         lines.next();
     }
-    assert_eq!(EDGE_COST_DIMENSION, lines.next().expect("No edge cost dim given")?.parse()?);
+    // assert_eq!(EDGE_COST_DIMENSION, lines.next().expect("No edge cost dim given")?.parse()?);
     let num_of_nodes = lines.next().expect("Number of nodes not present in file")?.parse()?;
     let num_of_edges = lines.next().expect("Number of edges not present in file")?.parse()?;
 
@@ -147,7 +145,7 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
                 tokens[2].parse()?,
                 tokens[3].parse()?,
                 tokens[4].parse()?,
-                tokens[5].parse()?
+                tokens[5].parse()?,
             ));
             parsed_nodes += 1;
         } else if parsed_edges < num_of_edges {
@@ -157,7 +155,7 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
                 tokens[1].parse()?,
                 edge::parse_costs(&tokens[2..tokens.len() - 2]),
                 tokens[tokens.len() - 2].parse()?,
-                tokens[tokens.len() - 1].parse()?
+                tokens[tokens.len() - 1].parse()?,
             ));
             parsed_edges += 1;
         } else {
