@@ -1,15 +1,20 @@
-use actix_web::{App, http::Method, HttpRequest, server};
+use actix_web::{App, http::Method, HttpRequest, server, HttpResponse};
+use actix_web::middleware::cors::Cors;
 
-fn handle_register(_req: &HttpRequest) -> &'static str {
-    "Hello, world"
+fn handle_register(_req: &HttpRequest) -> HttpResponse {
+    HttpResponse::Ok()
+        .finish()
 }
 
-fn handle_login(_req: &HttpRequest) -> &'static str {
-    "Hello, world!"
+fn handle_login(_req: &HttpRequest) -> HttpResponse {
+    HttpResponse::Ok()
+        .header("Authorization", "generatedToken")
+        .finish()
 }
 
-fn handle_fsp(_req: &HttpRequest) -> &'static str {
-    "Hello, world"
+fn handle_fsp(_req: &HttpRequest) -> HttpResponse {
+    HttpResponse::Ok()
+        .finish()
 }
 
 pub fn start_server() {
@@ -17,11 +22,17 @@ pub fn start_server() {
         vec![
             App::new()
                 .prefix("/user")
-                .resource("/register", |r| r.method(Method::POST).f(handle_register))
-                .resource("/login", |r| r.method(Method::POST).f(handle_login)),
+                .configure(|app| Cors::for_app(app)
+                    .allowed_origin("http://localhost:8080")
+                    .resource("/register", |r| r.method(Method::POST).f(handle_register))
+                    .resource("/login", |r| r.method(Method::POST).f(handle_login))
+                    .register()),
             App::new()
                 .prefix("/routing")
-                .resource("/fsp", |r| r.method(Method::POST).f(handle_fsp))
+                .configure(|app| Cors::for_app(app)
+                    .allowed_origin("http://localhost:8080")
+                    .resource("/fsp", |r| r.method(Method::POST).f(handle_fsp))
+                    .register())
         ]
     })
         .bind("localhost:8000")
