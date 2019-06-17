@@ -128,7 +128,8 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
         // comments and blanks
         lines.next();
     }
-    // assert_eq!(EDGE_COST_DIMENSION, lines.next().expect("No edge cost dim given")?.parse()?);
+    let cost_dim: usize = lines.next().expect("No edge cost dim given")?.parse()?;
+    assert_eq!(EDGE_COST_DIMENSION, cost_dim);
     let num_of_nodes = lines.next().expect("Number of nodes not present in file")?.parse()?;
     let num_of_edges = lines.next().expect("Number of edges not present in file")?.parse()?;
 
