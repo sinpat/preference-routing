@@ -3,7 +3,7 @@ use actix_web::middleware::cors::Cors;
 
 fn handle_register(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
-        .finish()
+        .body("register user")
 }
 
 fn handle_login(_req: &HttpRequest) -> HttpResponse {
@@ -14,7 +14,7 @@ fn handle_login(_req: &HttpRequest) -> HttpResponse {
 
 fn handle_fsp(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
-        .finish()
+        .body("shortest route")
 }
 
 pub fn start_server() {
