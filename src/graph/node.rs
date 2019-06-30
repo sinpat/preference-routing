@@ -12,3 +12,8 @@ impl Node {
         Node { id, lat, long, height, ch_level }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+}

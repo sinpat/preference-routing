@@ -1,9 +1,8 @@
 mod graph;
 mod helpers;
 mod server;
-mod tests;
 
-const GRAPH_FILE: &str = "/home/patrick/Uni/Bachelor/Bachelorarbeit/data/stuttgart/concGraph";
+// const GRAPH_FILE: &str = "/home/patrick/Uni/Bachelor/Bachelorarbeit/data/stuttgart/concGraph";
 
 fn main() {
     /*

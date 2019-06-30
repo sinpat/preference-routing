@@ -54,3 +54,8 @@ pub fn start_server() {
         .expect("Can not bind to port 8000")
         .run();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+}

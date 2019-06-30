@@ -90,3 +90,8 @@ impl HalfEdge {
         costs
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+}
