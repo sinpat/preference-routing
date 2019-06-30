@@ -1,11 +1,14 @@
-use crate::graph::Graph;
-use crate::helpers::add_floats;
 use std::collections::binary_heap::BinaryHeap;
+
 use ordered_float::OrderedFloat;
 
-pub mod state;
+use state::Direction::{BACKWARD, FORWARD};
 use state::State;
-use state::Direction::{ FORWARD, BACKWARD };
+
+use crate::graph::Graph;
+use crate::helpers::add_floats;
+
+pub mod state;
 
 pub struct Dijkstra<'a> {
     graph: &'a Graph,
@@ -16,7 +19,7 @@ pub struct Dijkstra<'a> {
     dist_backward: Vec<OrderedFloat<f64>>,
     previous: Vec<(Option<usize>, Option<usize>)>,
     successive: Vec<(Option<usize>, Option<usize>)>,
-    best_node: (Option<usize>, OrderedFloat<f64>)
+    best_node: (Option<usize>, OrderedFloat<f64>),
 }
 
 impl<'a> Dijkstra<'a> {
@@ -30,7 +33,7 @@ impl<'a> Dijkstra<'a> {
             dist_backward: Vec::new(),
             previous: Vec::new(),
             successive: Vec::new(),
-            best_node: (None, OrderedFloat(std::f64::MAX))
+            best_node: (None, OrderedFloat(std::f64::MAX)),
         }
     }
 
@@ -70,7 +73,7 @@ impl<'a> Dijkstra<'a> {
                 let next = State {
                     node_id: half_edge.get_target_id(),
                     cost: add_floats(cost, half_edge.calc_costs()),
-                    direction
+                    direction,
                 };
                 if next.cost < self.dist_forward[next.node_id] {
                     self.dist_forward[next.node_id] = next.cost;
@@ -94,7 +97,7 @@ impl<'a> Dijkstra<'a> {
                 let next = State {
                     node_id: half_edge.get_target_id(),
                     cost: add_floats(cost, half_edge.calc_costs()),
-                    direction
+                    direction,
                 };
                 if next.cost < self.dist_backward[next.node_id] {
                     self.dist_backward[next.node_id] = next.cost;

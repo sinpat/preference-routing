@@ -1,5 +1,8 @@
-use actix_web::{App, http::Method, HttpRequest, server, HttpResponse};
+use actix_web::{App, HttpRequest, HttpResponse, server};
+use actix_web::http::Method;
 use actix_web::middleware::cors::Cors;
+
+use crate::graph::dijkstra::Dijkstra;
 
 fn handle_register(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
@@ -8,7 +11,19 @@ fn handle_register(_req: &HttpRequest) -> HttpResponse {
 
 fn handle_login(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
-        .header("Authorization", "generatedToken")
+        .header("Authorization", "REPLACE ME")
+        .finish()
+}
+
+fn set_source(req: &HttpRequest) -> HttpResponse {
+    println!("{:?}", req);
+    // println!("{:?}", req.content_type());
+    HttpResponse::Ok()
+        .finish()
+}
+
+fn set_target(_req: &HttpRequest) -> HttpResponse {
+    HttpResponse::Ok()
         .finish()
 }
 
@@ -23,19 +38,19 @@ pub fn start_server() {
             App::new()
                 .prefix("/user")
                 .configure(|app| Cors::for_app(app)
-                    .allowed_origin("http://localhost:8080")
                     .resource("/register", |r| r.method(Method::POST).f(handle_register))
                     .resource("/login", |r| r.method(Method::POST).f(handle_login))
                     .register()),
             App::new()
                 .prefix("/routing")
                 .configure(|app| Cors::for_app(app)
-                    .allowed_origin("http://localhost:8080")
+                    .resource("/source", |r| r.method(Method::POST).f(set_source))
+                    .resource("/target", |r| r.method(Method::POST).f(set_target))
                     .resource("/fsp", |r| r.method(Method::POST).f(handle_fsp))
                     .register())
         ]
     })
         .bind("localhost:8000")
-        .unwrap()
+        .expect("Can not bind to port 8000")
         .run();
 }
