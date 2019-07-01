@@ -15,10 +15,10 @@ const EDGE_COST_DIMENSION: usize = 2;
 pub struct Graph {
     pub nodes: Vec<Node>,
     pub edges: Vec<Edge>,
+    pub offsets_in: Vec<usize>,
+    pub offsets_out: Vec<usize>,
     half_edges_in: Vec<HalfEdge>,
     half_edges_out: Vec<HalfEdge>,
-    offsets_in: Vec<usize>,
-    offsets_out: Vec<usize>,
 }
 
 impl Graph {
@@ -45,15 +45,21 @@ impl Graph {
         }
         edges.sort_by(|a, b| a.get_id().cmp(&b.get_id()));
         nodes.sort_by(|a, b| a.id.cmp(&b.id));
-        Graph { nodes, edges, half_edges_in, half_edges_out, offsets_in, offsets_out }
+        Graph { nodes, edges, offsets_in, offsets_out, half_edges_in, half_edges_out }
     }
 
-    pub fn get_nodes(&self) -> &Vec<Node> {
-        &self.nodes
+    pub fn get_ch_edges_out(&self, node_id: usize) -> Vec<&HalfEdge> {
+        self.get_edges_out(node_id)
+            .iter()
+            .filter(|x| self.nodes[x.get_target_id()].ch_level >= self.nodes[node_id].ch_level)
+            .collect()
     }
 
-    pub fn get_edges(&self) -> &Vec<Edge> {
-        &self.edges
+    pub fn get_ch_edges_in(&self, node_id: usize) -> Vec<&HalfEdge> {
+        self.get_edges_in(node_id)
+            .iter()
+            .filter(|x| self.nodes[x.get_target_id()].ch_level >= self.nodes[node_id].ch_level)
+            .collect()
     }
 
     fn get_edges_out(&self, node_id: usize) -> &[HalfEdge] {
@@ -62,40 +68,6 @@ impl Graph {
 
     fn get_edges_in(&self, node_id: usize) -> &[HalfEdge] {
         &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
-    }
-
-    pub fn get_ch_edges_out(&self, node_id: usize) -> &[HalfEdge] {
-        self.get_edges_out(node_id)
-        /*
-        self.get_edges_out(node_id)
-            .into_iter()
-            .filter(|x| self.nodes[x.get_target_id()].get_ch_level() >= self.nodes[node_id].get_ch_level())
-            .collect()
-        */
-    }
-
-    pub fn get_ch_edges_in(&self, node_id: usize) -> &[HalfEdge] {
-        self.get_edges_in(node_id)
-    }
-
-    pub fn get_offsets_out(&self) -> &Vec<usize> {
-        &self.offsets_out
-    }
-
-    pub fn get_offsets_in(&self) -> &Vec<usize> {
-        &self.offsets_in
-    }
-
-    pub fn get_ch_level(&self, node_id: usize) -> usize {
-        self.nodes[node_id].ch_level
-    }
-
-    pub fn get_source_id(&self, edge_id: usize) -> usize {
-        self.edges[edge_id].get_source_id()
-    }
-
-    pub fn get_target_id(&self, edge_id: usize) -> usize {
-        self.edges[edge_id].get_target_id()
     }
 
     pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<usize> {
@@ -174,12 +146,12 @@ mod tests {
     fn graph_parsing() {
         let result = parse_graph_file("./src/test_graphs/testGraph");
         let graph = result.unwrap();
-        assert_eq!(12, graph.get_nodes().len());
-        assert_eq!(18, graph.get_edges().len());
+        assert_eq!(12, graph.nodes.len());
+        assert_eq!(18, graph.edges.len());
 
         let exp_offsets_out: Vec<usize> = vec![0, 0, 2, 6, 7, 9, 10, 12, 13, 15, 17, 18, 18];
         let exp_offsets_in: Vec<usize> = vec![0, 1, 2, 3, 4, 6, 8, 11, 12, 14, 16, 18, 18];
-        assert_eq!(&exp_offsets_out, graph.get_offsets_out());
-        assert_eq!(&exp_offsets_in, graph.get_offsets_in());
+        assert_eq!(exp_offsets_out, graph.offsets_out);
+        assert_eq!(exp_offsets_in, graph.offsets_in);
     }
 }

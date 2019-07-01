@@ -2,8 +2,6 @@ use actix_web::{App, HttpRequest, HttpResponse, server};
 use actix_web::http::Method;
 use actix_web::middleware::cors::Cors;
 
-use crate::graph::dijkstra::Dijkstra;
-
 fn handle_register(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
         .body("register user")

@@ -46,14 +46,12 @@ impl<'a> Dijkstra<'a> {
         while let Some(candidate) = self.candidates.pop() {
             self.process_state(candidate);
         }
-        match self.best_node {
-            (Some(node_id), cost) => {
-                println!("Found node {:?} with cost {:?}", node_id, cost);
-                let path = self.construct_path(node_id);
-                return Some((path, cost));
-            }
-            (None, _) => None
+        if let (Some(node_id), cost) = self.best_node {
+            println!("Found node {:?} with cost {:?}", node_id, cost);
+            let path = self.construct_path(node_id);
+            return Some((path, cost));
         }
+        None
     }
 
     fn process_state(&mut self, candidate: State) {
@@ -67,9 +65,6 @@ impl<'a> Dijkstra<'a> {
                 self.best_node = (Some(node_id), merged_cost);
             }
             for half_edge in self.graph.get_ch_edges_out(node_id) {
-                if self.graph.get_ch_level(half_edge.get_target_id()) < self.graph.get_ch_level(node_id) {
-                    continue;
-                }
                 let next = State {
                     node_id: half_edge.get_target_id(),
                     cost: add_floats(cost, half_edge.calc_costs()),
@@ -91,9 +86,6 @@ impl<'a> Dijkstra<'a> {
                 self.best_node = (Some(node_id), merged_cost);
             }
             for half_edge in self.graph.get_ch_edges_in(node_id) {
-                if self.graph.get_ch_level(half_edge.get_target_id()) < self.graph.get_ch_level(node_id) {
-                    continue;
-                }
                 let next = State {
                     node_id: half_edge.get_target_id(),
                     cost: add_floats(cost, half_edge.calc_costs()),
@@ -122,14 +114,14 @@ impl<'a> Dijkstra<'a> {
             node_and_edge = self.successive[current_node_id];
             path.push(edge_id);
         }
-        return self.graph.unwrap_edges(path, self.source_node);
+        self.graph.unwrap_edges(path, self.source_node)
     }
 
     fn init_query(&mut self, source: usize, target: usize) {
         self.source_node = source;
         self.target_node = target;
         self.candidates = BinaryHeap::new();
-        let num_of_nodes = self.graph.get_nodes().len();
+        let num_of_nodes = self.graph.nodes.len();
         self.dist_forward = vec![OrderedFloat(std::f64::MAX); num_of_nodes];
         self.dist_forward[source] = OrderedFloat(0.0);
         self.dist_backward = vec![OrderedFloat(std::f64::MAX); num_of_nodes];
