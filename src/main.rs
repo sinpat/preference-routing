@@ -2,16 +2,13 @@ mod graph;
 mod helpers;
 mod server;
 
-// const GRAPH_FILE: &str = "/home/patrick/Uni/Bachelor/Bachelorarbeit/data/stuttgart/concGraph";
+const GRAPH_FILE: &str = "/home/patrick/Uni/Bachelor/Bachelorarbeit/data/stuttgart/concGraph";
 
 fn main() {
-    /*
     let graph =
         graph::parse_graph_file(GRAPH_FILE)
             .unwrap();
-    let dijkstra = graph::dijkstra::Dijkstra::new(&graph);
-    */
-    server::start_server();
+    server::start_server(graph);
 }
 
 /*

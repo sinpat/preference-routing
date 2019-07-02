@@ -7,3 +7,5 @@ edition = "2018"
 [dependencies]
 ordered-float = "1.0.2"
 actix-web = "0.7"
+futures = "*"
+serde = { version = "1.0", features = ["derive"] }
