@@ -4,56 +4,89 @@ use actix_web::{App, AsyncResponder, Error, HttpMessage, HttpRequest, HttpRespon
 use actix_web::http::Method;
 use actix_web::middleware::cors::Cors;
 use futures::future::Future;
-use serde::{ Serialize, Deserialize };
+use serde::{Deserialize, Serialize};
 
+use crate::graph::dijkstra::Dijkstra;
 use crate::graph::Graph;
+use crate::helpers::Coordinate;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Coordinate {
-    lat: f64,
-    lng: f64,
+#[derive(Serialize, Debug)]
+struct HalfNode<'a> {
+    location: &'a Coordinate,
+    node_id: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct FspRequest {
-    source: Coordinate,
-    target: Coordinate
+    source: usize,
+    target: usize,
 }
 
-fn handle_register(_req: &HttpRequest) -> HttpResponse {
+#[derive(Serialize, Debug)]
+struct FspResult<'a> {
+    path: Vec<&'a Coordinate>,
+    cost: f64,
+}
+
+fn register(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
         .body("register user")
 }
 
-fn handle_login(_req: &HttpRequest) -> HttpResponse {
+fn login(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
-        .header("Authorization", "REPLACE ME")
+        .header("Authorization", "foobar")
         .finish()
 }
 
-fn set_source(req: &HttpRequest<Arc<Graph>>) -> Box<Future<Item = HttpResponse, Error = Error>> {
+fn verify_token(req: &HttpRequest) -> Box<Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
-        .and_then(|source: Coordinate| {
-            let response = HttpResponse::Ok().json(source);
+        .and_then(|token: String| {
+            let response;
+            if token == "foobar" {
+                response = HttpResponse::Ok().finish();
+            } else {
+                response = HttpResponse::Unauthorized().finish();
+            }
             Ok(response)
         }).responder()
 }
 
-fn set_target(req: &HttpRequest<Arc<Graph>>) -> Box<Future<Item = HttpResponse, Error = Error>> {
+fn set_source(req: HttpRequest<Arc<Graph>>) -> Box<Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
-        .and_then(|target: Coordinate| {
-            let response = HttpResponse::Ok().json(target);
+        .and_then(move |source: Coordinate| {
+            let (location, node_id) = req.state().find_closest_node(source);
+            let response = HttpResponse::Ok().json(HalfNode { location, node_id });
             Ok(response)
         }).responder()
 }
 
-fn handle_fsp(req: &HttpRequest<Arc<Graph>>) -> Box<Future<Item = HttpResponse, Error = Error>> {
+fn set_target(req: HttpRequest<Arc<Graph>>) -> Box<Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
-        .and_then(|FspRequest { source, target }| {
-            let response = HttpResponse::Ok().json(vec![source, target]);
+        .and_then(move |target: Coordinate| {
+            let (location, node_id) = req.state().find_closest_node(target);
+            let response = HttpResponse::Ok().json(HalfNode { location, node_id });
+            Ok(response)
+        }).responder()
+}
+
+fn fsp(req: HttpRequest<Arc<Graph>>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+    req.json()
+        .from_err()
+        .and_then(move |FspRequest { source, target }| {
+            let mut dijkstra = Dijkstra::new(req.state());
+            let result = dijkstra.find_shortest_path(source, target);
+            let response;
+            match result {
+                Some((path, cost)) => {
+                    let body = FspResult { path, cost: cost.0 };
+                    response = HttpResponse::Ok().json(body);
+                },
+                None => response = HttpResponse::Ok().finish()
+            }
             Ok(response)
         }).responder()
 }
@@ -66,16 +99,17 @@ pub fn start_server(graph: Graph) {
             App::new()
                 .prefix("/user")
                 .configure(|app| Cors::for_app(app)
-                    .resource("/register", |r| r.method(Method::POST).f(handle_register))
-                    .resource("/login", |r| r.method(Method::POST).f(handle_login))
+                    .resource("/register", |r| r.method(Method::POST).f(register))
+                    .resource("/login", |r| r.method(Method::POST).f(login))
+                    .resource("/verify", |r| r.method(Method::POST).f(verify_token))
                     .register())
                 .boxed(),
             App::with_state(gr.clone())
                 .prefix("/routing")
                 .configure(|app| Cors::for_app(app)
-                    .resource("/source", |r| r.method(Method::POST).f(set_source))
-                    .resource("/target", |r| r.method(Method::POST).f(set_target))
-                    .resource("/fsp", |r| r.method(Method::POST).f(handle_fsp))
+                    .resource("/source", |r| r.method(Method::POST).with(set_source))
+                    .resource("/target", |r| r.method(Method::POST).with(set_target))
+                    .resource("/fsp", |r| r.method(Method::POST).with(fsp))
                     .register())
                 .boxed()
         ]

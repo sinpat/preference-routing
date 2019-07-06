@@ -4,6 +4,8 @@ use std::io::BufReader;
 
 use edge::{Edge, HalfEdge};
 use node::Node;
+use crate::helpers::Coordinate;
+use ordered_float::OrderedFloat;
 
 mod edge;
 mod node;
@@ -62,6 +64,20 @@ impl Graph {
             .collect()
     }
 
+    pub fn find_closest_node(&self, point: Coordinate) -> (&Coordinate, usize) {
+        // TODO: Return Option
+        let mut closest = &self.nodes[0];
+        let mut distance = OrderedFloat(std::f64::MAX);
+        for node in &self.nodes {
+            let current_distance = point.distance_to(&node.location);
+            if current_distance < distance {
+                closest = node;
+                distance = current_distance;
+            }
+        }
+        (&closest.location, closest.id)
+    }
+
     fn get_edges_out(&self, node_id: usize) -> &[HalfEdge] {
         &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
     }
@@ -70,22 +86,22 @@ impl Graph {
         &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
     }
 
-    pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<usize> {
-        let mut node_path = vec![source_node];
+    pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<&Coordinate> {
+        let mut node_path = vec![&self.nodes[source_node].location];
         for edge_id in edge_path {
             node_path.append(&mut self.unpack_edge(edge_id));
         }
         node_path
     }
 
-    fn unpack_edge(&self, edge_id: usize) -> Vec<usize> {
+    fn unpack_edge(&self, edge_id: usize) -> Vec<&Coordinate> {
         let edge = &self.edges[edge_id];
         if let Some((edge_1, edge_2)) = edge.get_replaced_edges() {
             let mut relaxed_nodes = self.unpack_edge(edge_1);
             relaxed_nodes.append(&mut self.unpack_edge(edge_2));
             return relaxed_nodes;
         }
-        vec![edge.get_target_id()]
+        vec![&self.nodes[edge.get_target_id()].location]
     }
 }
 
