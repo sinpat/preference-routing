@@ -14,7 +14,7 @@ pub struct Coordinate {
 impl Coordinate {
     pub fn distance_to(&self, other: &Coordinate) -> OrderedFloat<f64> {
         let distance = (self.lat - other.lat).powi(2) + (self.lng - other.lng).powi(2);
-        return OrderedFloat(distance);
+        OrderedFloat(distance)
     }
 }
 

@@ -6,7 +6,7 @@ use state::Direction::{BACKWARD, FORWARD};
 use state::State;
 
 use crate::graph::Graph;
-use crate::helpers::{add_floats, Coordinate};
+use crate::helpers::add_floats;
 
 pub mod state;
 
@@ -37,7 +37,7 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    pub fn find_shortest_path(&mut self, source: usize, target: usize) -> Option<(Vec<&Coordinate>, OrderedFloat<f64>)> {
+    pub fn find_shortest_path(&mut self, source: usize, target: usize) -> Option<(Vec<usize>, OrderedFloat<f64>)> {
         println!("Running Dijkstra search...");
         self.init_query(source, target);
         self.best_node = (None, OrderedFloat(std::f64::MAX));
@@ -100,7 +100,7 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    fn construct_path(&self, node_id: usize) -> Vec<&Coordinate> {
+    fn construct_path(&self, node_id: usize) -> Vec<usize> {
         println!("Constructing Path around node {:?}", node_id);
         let mut path = Vec::new();
         let mut node_and_edge = self.previous[node_id];

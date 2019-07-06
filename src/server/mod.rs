@@ -43,12 +43,11 @@ fn verify_token(req: &HttpRequest) -> Box<Future<Item=HttpResponse, Error=Error>
     req.json()
         .from_err()
         .and_then(|token: String| {
-            let response;
-            if token == "foobar" {
-                response = HttpResponse::Ok().finish();
+            let response = if token == "foobar" {
+                HttpResponse::Ok().finish()
             } else {
-                response = HttpResponse::Unauthorized().finish();
-            }
+                HttpResponse::Unauthorized().finish()
+            };
             Ok(response)
         }).responder()
 }
@@ -77,17 +76,19 @@ fn fsp(req: HttpRequest<Arc<Graph>>) -> Box<Future<Item=HttpResponse, Error=Erro
     req.json()
         .from_err()
         .and_then(move |FspRequest { source, target }| {
-            let mut dijkstra = Dijkstra::new(req.state());
+            let state = req.state();
+            let mut dijkstra = Dijkstra::new(state);
             let result = dijkstra.find_shortest_path(source, target);
-            let response;
-            match result {
-                Some((path, cost)) => {
-                    let body = FspResult { path, cost: cost.0 };
-                    response = HttpResponse::Ok().json(body);
-                },
-                None => response = HttpResponse::Ok().finish()
+            if let Some((node_path, cost)) = result {
+                let path = node_path
+                    .iter()
+                    .map(|node_id| &state.nodes[*node_id].location)
+                    .collect();
+                let body = FspResult { path, cost: cost.0 };
+                return Ok(HttpResponse::Ok().json(body));
+            } else {
+                return Ok(HttpResponse::Ok().finish());
             }
-            Ok(response)
         }).responder()
 }
 

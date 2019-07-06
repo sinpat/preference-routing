@@ -86,22 +86,22 @@ impl Graph {
         &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
     }
 
-    pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<&Coordinate> {
-        let mut node_path = vec![&self.nodes[source_node].location];
+    pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<usize> {
+        let mut node_path = vec![source_node];
         for edge_id in edge_path {
             node_path.append(&mut self.unpack_edge(edge_id));
         }
         node_path
     }
 
-    fn unpack_edge(&self, edge_id: usize) -> Vec<&Coordinate> {
+    fn unpack_edge(&self, edge_id: usize) -> Vec<usize> {
         let edge = &self.edges[edge_id];
         if let Some((edge_1, edge_2)) = edge.get_replaced_edges() {
             let mut relaxed_nodes = self.unpack_edge(edge_1);
             relaxed_nodes.append(&mut self.unpack_edge(edge_2));
             return relaxed_nodes;
         }
-        vec![&self.nodes[edge.get_target_id()].location]
+        vec![edge.get_target_id()]
     }
 }
 
