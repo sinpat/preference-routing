@@ -13,7 +13,7 @@ pub struct Coordinate {
 
 impl Coordinate {
     pub fn distance_to(&self, other: &Coordinate) -> OrderedFloat<f64> {
-        let distance = (self.lat - other.lat).powi(2) + (self.lng - other.lng).powi(2);
+        let distance = ((self.lat - other.lat).powi(2) + (self.lng - other.lng).powi(2)).sqrt();
         OrderedFloat(distance)
     }
 }
@@ -28,5 +28,12 @@ mod tests {
         let a = OrderedFloat(1.0);
         let b = OrderedFloat(2.0);
         assert_eq!(add_floats(a, b), OrderedFloat(3.0));
+    }
+
+    #[test]
+    fn test_distance_to() {
+        let a = Coordinate { lat: 5.0, lng: 7.0 };
+        let b = Coordinate { lat: 2.0, lng: 3.0 };
+        assert_eq!(a.distance_to(&b), OrderedFloat(5.0));
     }
 }
