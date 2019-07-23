@@ -2,16 +2,17 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
+use ordered_float::OrderedFloat;
+
 use edge::{Edge, HalfEdge};
 use node::Node;
+
+use crate::EDGE_COST_DIMENSION;
 use crate::helpers::Coordinate;
-use ordered_float::OrderedFloat;
 
 mod edge;
 mod node;
 pub mod dijkstra;
-
-const EDGE_COST_DIMENSION: usize = 2;
 
 #[derive(Debug)]
 pub struct Graph {
@@ -31,21 +32,28 @@ impl Graph {
         let mut half_edges_out: Vec<HalfEdge> = Vec::new();
         let mut half_edges_in: Vec<HalfEdge> = Vec::new();
 
-        edges.sort_by(|a, b| a.get_source_id().cmp(&b.get_source_id()));
+        // edges and offsets out
+        edges.sort_by(|a, b| a.source_id.cmp(&b.source_id));
         for edge in &edges {
-            offsets_out[edge.get_source_id() + 1] += 1;
-            half_edges_out.push(HalfEdge::new(edge.get_id(), edge.get_target_id(), edge.get_edge_costs()));
+            offsets_out[edge.source_id + 1] += 1;
+            half_edges_out.push(HalfEdge::new(edge.id, edge.target_id, edge.edge_costs));
         }
-        edges.sort_by(|a, b| a.get_target_id().cmp(&b.get_target_id()));
+
+        // edges and offsets in
+        edges.sort_by(|a, b| a.target_id.cmp(&b.target_id));
         for edge in &edges {
-            offsets_in[edge.get_target_id() + 1] += 1;
-            half_edges_in.push(HalfEdge::new(edge.get_id(), edge.get_source_id(), edge.get_edge_costs()));
+            offsets_in[edge.target_id + 1] += 1;
+            half_edges_in.push(HalfEdge::new(edge.id, edge.source_id, edge.edge_costs));
         }
+
+        // finish offset arrays
         for index in 1..offsets_out.len() {
             offsets_out[index] += offsets_out[index - 1];
             offsets_in[index] += offsets_in[index - 1];
         }
-        edges.sort_by(|a, b| a.get_id().cmp(&b.get_id()));
+
+        // sort nodes and edges by id
+        edges.sort_by(|a, b| a.id.cmp(&b.id));
         nodes.sort_by(|a, b| a.id.cmp(&b.id));
         Graph { nodes, edges, offsets_in, offsets_out, half_edges_in, half_edges_out }
     }
@@ -53,14 +61,14 @@ impl Graph {
     pub fn get_ch_edges_out(&self, node_id: usize) -> Vec<&HalfEdge> {
         self.get_edges_out(node_id)
             .iter()
-            .filter(|x| self.nodes[x.get_target_id()].ch_level >= self.nodes[node_id].ch_level)
+            .filter(|x| self.nodes[x.target_id].ch_level >= self.nodes[node_id].ch_level)
             .collect()
     }
 
     pub fn get_ch_edges_in(&self, node_id: usize) -> Vec<&HalfEdge> {
         self.get_edges_in(node_id)
             .iter()
-            .filter(|x| self.nodes[x.get_target_id()].ch_level >= self.nodes[node_id].ch_level)
+            .filter(|x| self.nodes[x.target_id].ch_level >= self.nodes[node_id].ch_level)
             .collect()
     }
 
@@ -101,7 +109,7 @@ impl Graph {
             relaxed_nodes.append(&mut self.unpack_edge(edge_2));
             return relaxed_nodes;
         }
-        vec![edge.get_target_id()]
+        vec![edge.target_id]
     }
 }
 
