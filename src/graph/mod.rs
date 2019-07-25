@@ -9,6 +9,7 @@ use node::Node;
 
 use crate::EDGE_COST_DIMENSION;
 use crate::helpers::Coordinate;
+use crate::graph::dijkstra::Dijkstra;
 
 mod edge;
 mod node;
@@ -56,6 +57,18 @@ impl Graph {
         edges.sort_by(|a, b| a.id.cmp(&b.id));
         nodes.sort_by(|a, b| a.id.cmp(&b.id));
         Graph { nodes, edges, offsets_in, offsets_out, half_edges_in, half_edges_out }
+    }
+
+    pub fn find_shortest_path(
+        &self,
+        source: usize,
+        target: usize,
+        include: Vec<Coordinate>,
+        avoid: Vec<Coordinate>,
+        alpha: [f64; EDGE_COST_DIMENSION]
+    ) -> Option<(Vec<usize>, [f64; EDGE_COST_DIMENSION], f64)> {
+        let mut dijkstra = Dijkstra::new(self);
+        dijkstra.run(source, target, include, avoid, alpha)
     }
 
     pub fn get_ch_edges_out(&self, node_id: usize) -> Vec<&HalfEdge> {

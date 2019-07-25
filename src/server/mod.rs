@@ -7,7 +7,6 @@ use futures::future::Future;
 use serde::{Deserialize, Serialize};
 
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
-use crate::graph::dijkstra::Dijkstra;
 use crate::graph::Graph;
 use crate::helpers::Coordinate;
 
@@ -75,25 +74,25 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
 fn fsp(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
-        .and_then(move |FspRequest { source, target, include, avoid}| {
-            let state = req.state();
-            let mut dijkstra = Dijkstra::new(&state.graph);
-            let (_, source_id) = state.graph.find_closest_node(source);
-            let (_, target_id) = state.graph.find_closest_node(target);
-            let result = dijkstra.find_shortest_path(source_id, target_id, include, avoid, state.alpha);
+        .and_then(move |FspRequest { source, target, include, avoid }| {
+            let graph = &req.state().graph;
+            let alpha = req.state().alpha;
+            let (_, source_id) = graph.find_closest_node(source);
+            let (_, target_id) = graph.find_closest_node(target);
+            let result = graph.find_shortest_path(source_id, target_id, include, avoid, alpha);
             match result {
                 None => Ok(HttpResponse::Ok().finish()),
                 Some((node_path, costs, total_cost)) => {
                     let waypoints = node_path
                         .iter()
-                        .map(|node_id| &state.graph.nodes[*node_id].location)
+                        .map(|node_id| &graph.nodes[*node_id].location)
                         .collect();
                     let body = Path {
                         waypoints,
                         costs,
                         total_cost,
-                        alpha: state.alpha,
-                        cost_tags: EDGE_COST_TAGS
+                        alpha,
+                        cost_tags: EDGE_COST_TAGS,
                     };
                     Ok(HttpResponse::Ok().json(body))
                 }
