@@ -11,16 +11,12 @@ use crate::graph::dijkstra::Dijkstra;
 use crate::graph::Graph;
 use crate::helpers::Coordinate;
 
-#[derive(Serialize, Debug)]
-struct HalfNode<'a> {
-    location: &'a Coordinate,
-    node_id: usize,
-}
-
 #[derive(Deserialize, Debug)]
 struct FspRequest {
-    source: usize,
-    target: usize,
+    source: Coordinate,
+    target: Coordinate,
+    include: Vec<Coordinate>,
+    avoid: Vec<Coordinate>,
 }
 
 #[derive(Serialize, Debug)]
@@ -43,7 +39,7 @@ fn login(_req: &HttpRequest) -> HttpResponse {
         .finish()
 }
 
-fn verify_token(req: &HttpRequest) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn verify_token(req: &HttpRequest) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
         .and_then(|token: String| {
@@ -60,8 +56,8 @@ fn set_source(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
     req.json()
         .from_err()
         .and_then(move |source: Coordinate| {
-            let (location, node_id) = req.state().graph.find_closest_node(source);
-            let response = HttpResponse::Ok().json(HalfNode { location, node_id });
+            let (location, _) = req.state().graph.find_closest_node(source);
+            let response = HttpResponse::Ok().json(location);
             Ok(response)
         }).responder()
 }
@@ -70,8 +66,8 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
     req.json()
         .from_err()
         .and_then(move |target: Coordinate| {
-            let (location, node_id) = req.state().graph.find_closest_node(target);
-            let response = HttpResponse::Ok().json(HalfNode { location, node_id });
+            let (location, _) = req.state().graph.find_closest_node(target);
+            let response = HttpResponse::Ok().json(location);
             Ok(response)
         }).responder()
 }
@@ -79,10 +75,12 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
 fn fsp(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
-        .and_then(move |FspRequest { source, target }| {
+        .and_then(move |FspRequest { source, target, include, avoid}| {
             let state = req.state();
             let mut dijkstra = Dijkstra::new(&state.graph);
-            let result = dijkstra.find_shortest_path(source, target, state.alpha);
+            let (_, source_id) = state.graph.find_closest_node(source);
+            let (_, target_id) = state.graph.find_closest_node(target);
+            let result = dijkstra.find_shortest_path(source_id, target_id, include, avoid, state.alpha);
             match result {
                 None => Ok(HttpResponse::Ok().finish()),
                 Some((node_path, costs, total_cost)) => {

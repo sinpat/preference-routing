@@ -7,7 +7,7 @@ use state::State;
 
 use crate::EDGE_COST_DIMENSION;
 use crate::graph::Graph;
-use crate::helpers::add_floats;
+use crate::helpers::{add_floats, Coordinate};
 use super::edge::add_edge_costs;
 
 pub mod state;
@@ -53,7 +53,14 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    pub fn find_shortest_path(&mut self, source: usize, target: usize, alpha: [f64; EDGE_COST_DIMENSION]) -> Option<(Vec<usize>, [f64; EDGE_COST_DIMENSION],f64)> {
+    pub fn find_shortest_path(
+        &mut self,
+        source: usize,
+        target: usize,
+        _include: Vec<Coordinate>,
+        _avoid: Vec<Coordinate>,
+        alpha: [f64; EDGE_COST_DIMENSION]
+    ) -> Option<(Vec<usize>, [f64; EDGE_COST_DIMENSION],f64)> {
         println!("Running Dijkstra search...");
         self.init_query(source, target);
         while let Some(candidate) = self.candidates.pop() {
