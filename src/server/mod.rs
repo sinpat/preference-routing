@@ -6,7 +6,7 @@ use actix_web::middleware::cors::Cors;
 use futures::future::Future;
 use serde::{Deserialize, Serialize};
 
-use crate::EDGE_COST_DIMENSION;
+use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 use crate::graph::dijkstra::Dijkstra;
 use crate::graph::Graph;
 use crate::helpers::Coordinate;
@@ -24,9 +24,12 @@ struct FspRequest {
 }
 
 #[derive(Serialize, Debug)]
-struct FspResult<'a> {
-    path: Vec<&'a Coordinate>,
-    cost: f64,
+struct Path<'a> {
+    waypoints: Vec<&'a Coordinate>,
+    costs: [f64; EDGE_COST_DIMENSION],
+    total_cost: f64,
+    alpha: [f64; EDGE_COST_DIMENSION],
+    cost_tags: [&'a str; EDGE_COST_DIMENSION],
 }
 
 fn register(_req: &HttpRequest) -> HttpResponse {
@@ -53,7 +56,7 @@ fn verify_token(req: &HttpRequest) -> Box<Future<Item=HttpResponse, Error=Error>
         }).responder()
 }
 
-fn set_source(req: HttpRequest<Arc<AppState>>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn set_source(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
         .and_then(move |source: Coordinate| {
@@ -63,7 +66,7 @@ fn set_source(req: HttpRequest<Arc<AppState>>) -> Box<Future<Item=HttpResponse, 
         }).responder()
 }
 
-fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
         .and_then(move |target: Coordinate| {
@@ -73,7 +76,7 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<Future<Item=HttpResponse, 
         }).responder()
 }
 
-fn fsp(req: HttpRequest<Arc<AppState>>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn fsp(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
         .and_then(move |FspRequest { source, target }| {
@@ -82,12 +85,18 @@ fn fsp(req: HttpRequest<Arc<AppState>>) -> Box<Future<Item=HttpResponse, Error=E
             let result = dijkstra.find_shortest_path(source, target, state.alpha);
             match result {
                 None => Ok(HttpResponse::Ok().finish()),
-                Some((node_path, cost)) => {
-                    let path = node_path
+                Some((node_path, costs, total_cost)) => {
+                    let waypoints = node_path
                         .iter()
                         .map(|node_id| &state.graph.nodes[*node_id].location)
                         .collect();
-                    let body = FspResult { path, cost: cost.0 };
+                    let body = Path {
+                        waypoints,
+                        costs,
+                        total_cost,
+                        alpha: state.alpha,
+                        cost_tags: EDGE_COST_TAGS
+                    };
                     Ok(HttpResponse::Ok().json(body))
                 }
             }

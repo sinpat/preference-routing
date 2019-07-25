@@ -5,8 +5,10 @@ use ordered_float::OrderedFloat;
 use state::Direction::{BACKWARD, FORWARD};
 use state::State;
 
-use crate::graph::{Graph, EDGE_COST_DIMENSION};
+use crate::EDGE_COST_DIMENSION;
+use crate::graph::Graph;
 use crate::helpers::add_floats;
+use super::edge::add_edge_costs;
 
 pub mod state;
 
@@ -15,85 +17,103 @@ pub struct Dijkstra<'a> {
     source_node: usize,
     target_node: usize,
     candidates: BinaryHeap<State>,
-    dist_forward: Vec<OrderedFloat<f64>>,
-    dist_backward: Vec<OrderedFloat<f64>>,
-    previous: Vec<(Option<usize>, Option<usize>)>,
-    successive: Vec<(Option<usize>, Option<usize>)>,
-    best_node: (Option<usize>, OrderedFloat<f64>),
+
+    // Best dist(-vector) to/from node
+    to_dist: Vec<([f64; EDGE_COST_DIMENSION], OrderedFloat<f64>)>,
+    from_dist: Vec<([f64; EDGE_COST_DIMENSION], OrderedFloat<f64>)>,
+
+    // Vec of (node_id, edge_id)
+    previous: Vec<Option<(usize, usize)>>,
+    successive: Vec<Option<(usize, usize)>>,
+
+    // (node_id, cost array, total_cost)
+    best_node: (Option<usize>, [f64; EDGE_COST_DIMENSION], OrderedFloat<f64>),
+
+    // Contains all the information about the nodes
+    // state: Vec<NodeState>,
 }
 
 impl<'a> Dijkstra<'a> {
+    // TODO: Think about omitting the "new" method and call the fsp method from the graph object, which then creates a Dijkstra instance
+
     pub fn new(graph: &Graph) -> Dijkstra {
         Dijkstra {
             graph,
             source_node: 0,
             target_node: 0,
             candidates: BinaryHeap::new(),
-            dist_forward: Vec::new(),
-            dist_backward: Vec::new(),
+            to_dist: Vec::new(),
+            from_dist: Vec::new(),
             previous: Vec::new(),
             successive: Vec::new(),
-            best_node: (None, OrderedFloat(std::f64::MAX)),
+            best_node: (None, [0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
+            /*
+            state: Vec::new(),
+            */
         }
     }
 
-    pub fn find_shortest_path(&mut self, source: usize, target: usize, alpha: [f64; EDGE_COST_DIMENSION]) -> Option<(Vec<usize>, OrderedFloat<f64>)> {
+    pub fn find_shortest_path(&mut self, source: usize, target: usize, alpha: [f64; EDGE_COST_DIMENSION]) -> Option<(Vec<usize>, [f64; EDGE_COST_DIMENSION],f64)> {
         println!("Running Dijkstra search...");
         self.init_query(source, target);
-        self.best_node = (None, OrderedFloat(std::f64::MAX));
-        self.candidates.push(State { node_id: source, cost: OrderedFloat(0.0), direction: FORWARD });
-        self.candidates.push(State { node_id: target, cost: OrderedFloat(0.0), direction: BACKWARD });
         while let Some(candidate) = self.candidates.pop() {
             self.process_state(candidate, alpha);
         }
-        if let (Some(node_id), cost) = self.best_node {
-            println!("Found node {:?} with cost {:?}", node_id, cost);
-            let path = self.construct_path(node_id);
-            return Some((path, cost));
+        match self.best_node {
+            // TODO: Think about wrapping the whole tuple in an option, not just the node_id
+            (None, _, _) => None,
+            (Some(node_id), costs, total_cost) => {
+                println!("Found node {:?} with cost {:?}", node_id, total_cost);
+                let path = self.construct_path(node_id);
+                Some((path, costs, total_cost.into_inner()))
+            }
         }
-        None
     }
 
     fn process_state(&mut self, candidate: State, alpha: [f64; EDGE_COST_DIMENSION]) {
-        let State { node_id, cost, direction } = candidate;
+        let State { node_id, costs, total_cost, direction } = candidate;
         if direction == FORWARD {
-            if cost > self.dist_forward[node_id] {
+            if total_cost > self.to_dist[node_id].1 {
                 return;
             }
-            let merged_cost = add_floats(cost, self.dist_backward[node_id]);
-            if merged_cost < self.best_node.1 {
-                self.best_node = (Some(node_id), merged_cost);
+            let merged_cost_vector = add_edge_costs(costs, self.from_dist[node_id].0);
+            let merged_cost = add_floats(total_cost, self.from_dist[node_id].1);
+            if merged_cost < self.best_node.2 {
+                self.best_node = (Some(node_id), merged_cost_vector, merged_cost);
             }
             for half_edge in self.graph.get_ch_edges_out(node_id) {
                 let next = State {
                     node_id: half_edge.target_id,
-                    cost: add_floats(cost, half_edge.calc_costs(alpha)),
+                    costs: add_edge_costs(costs, half_edge.edge_costs),
+                    total_cost: add_floats(total_cost, half_edge.calc_costs(alpha)),
                     direction,
                 };
-                if next.cost < self.dist_forward[next.node_id] {
-                    self.dist_forward[next.node_id] = next.cost;
-                    self.previous[next.node_id] = (Some(node_id), Some(half_edge.edge_id));
+                if next.total_cost < self.to_dist[next.node_id].1 {
+                    self.to_dist[next.node_id] = (next.costs, next.total_cost);
+                    self.previous[next.node_id] = Some((node_id, half_edge.edge_id));
                     self.candidates.push(next);
                 }
             }
         }
         if direction == BACKWARD {
-            if cost > self.dist_backward[node_id] {
+            if total_cost > self.from_dist[node_id].1 {
                 return;
             }
-            let merged_cost = add_floats(cost, self.dist_forward[node_id]);
-            if merged_cost < self.best_node.1 {
-                self.best_node = (Some(node_id), merged_cost);
+            let merged_cost_vector = add_edge_costs(costs, self.to_dist[node_id].0);
+            let merged_cost = add_floats(total_cost, self.to_dist[node_id].1);
+            if merged_cost < self.best_node.2 {
+                self.best_node = (Some(node_id), merged_cost_vector, merged_cost);
             }
             for half_edge in self.graph.get_ch_edges_in(node_id) {
                 let next = State {
                     node_id: half_edge.target_id,
-                    cost: add_floats(cost, half_edge.calc_costs(alpha)),
+                    costs: add_edge_costs(costs, half_edge.edge_costs),
+                    total_cost: add_floats(total_cost, half_edge.calc_costs(alpha)),
                     direction,
                 };
-                if next.cost < self.dist_backward[next.node_id] {
-                    self.dist_backward[next.node_id] = next.cost;
-                    self.successive[next.node_id] = (Some(node_id), Some(half_edge.edge_id));
+                if next.total_cost < self.from_dist[next.node_id].1 {
+                    self.from_dist[next.node_id] = (next.costs, next.total_cost);
+                    self.successive[next.node_id] = Some((node_id, half_edge.edge_id));
                     self.candidates.push(next);
                 }
             }
@@ -103,13 +123,13 @@ impl<'a> Dijkstra<'a> {
     fn construct_path(&self, node_id: usize) -> Vec<usize> {
         let mut path = Vec::new();
         let mut node_and_edge = self.previous[node_id];
-        while let (Some(current_node_id), Some(edge_id)) = node_and_edge {
+        while let Some((current_node_id, edge_id)) = node_and_edge {
             node_and_edge = self.previous[current_node_id];
             path.push(edge_id);
         }
         path.reverse();
         node_and_edge = self.successive[node_id];
-        while let (Some(current_node_id), Some(edge_id)) = node_and_edge {
+        while let Some((current_node_id, edge_id)) = node_and_edge {
             node_and_edge = self.successive[current_node_id];
             path.push(edge_id);
         }
@@ -117,17 +137,34 @@ impl<'a> Dijkstra<'a> {
     }
 
     fn init_query(&mut self, source: usize, target: usize) {
+        let num_of_nodes = self.graph.nodes.len();
         self.source_node = source;
         self.target_node = target;
-        self.candidates = BinaryHeap::new();
-        let num_of_nodes = self.graph.nodes.len();
-        self.dist_forward = vec![OrderedFloat(std::f64::MAX); num_of_nodes];
-        self.dist_forward[source] = OrderedFloat(0.0);
-        self.dist_backward = vec![OrderedFloat(std::f64::MAX); num_of_nodes];
-        self.dist_backward[target] = OrderedFloat(0.0);
 
-        self.previous = vec![(None, None); num_of_nodes];
-        self.successive = vec![(None, None); num_of_nodes];
+        self.candidates = BinaryHeap::new();
+        self.candidates.push(State { node_id: source, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: FORWARD });
+        self.candidates.push(State { node_id: target, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: BACKWARD });
+
+        self.to_dist = vec![([0.0, 0.0, 0.0], OrderedFloat(std::f64::MAX)); num_of_nodes];
+        self.to_dist[source].1 = OrderedFloat(0.0);
+        self.from_dist = vec![([0.0, 0.0, 0.0], OrderedFloat(std::f64::MAX)); num_of_nodes];
+        self.from_dist[target].1 = OrderedFloat(0.0);
+
+        self.previous = vec![None; num_of_nodes];
+        self.successive = vec![None; num_of_nodes];
+
+        self.best_node = (None, [0.0; EDGE_COST_DIMENSION],OrderedFloat(std::f64::MAX));
+
+        /*
+        self.state = vec![NodeState {
+            to_dist: OrderedFloat(std::f64::MAX),
+            from_dist: OrderedFloat(std::f64::MAX),
+            previous: None,
+            successive: None,
+        }; num_of_nodes];
+        self.state[source].to_dist = OrderedFloat(0.0);
+        self.state[target].from_dist = OrderedFloat(0.0);
+        */
     }
 }
 

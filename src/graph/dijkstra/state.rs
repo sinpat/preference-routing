@@ -1,5 +1,8 @@
 use std::cmp::Ordering;
+
 use ordered_float::OrderedFloat;
+
+use crate::EDGE_COST_DIMENSION;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum Direction { FORWARD, BACKWARD }
@@ -8,7 +11,10 @@ pub enum Direction { FORWARD, BACKWARD }
 #[derive(PartialEq)]
 pub struct State {
     pub node_id: usize,
-    pub cost: OrderedFloat<f64>,
+    // costs of the different metrics
+    pub costs: [f64; EDGE_COST_DIMENSION],
+    // cost including alpha
+    pub total_cost: OrderedFloat<f64>,
     pub direction: Direction
 }
 
@@ -17,7 +23,7 @@ impl std::cmp::Eq for State {}
 impl std::cmp::Ord for State {
     // switch comparison, because we want a min-heap
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.cmp(&self.cost)
+        other.total_cost.cmp(&self.total_cost)
     }
 }
 
@@ -26,6 +32,19 @@ impl std::cmp::PartialOrd for State {
         Some(self.cmp(other))
     }
 }
+
+/*
+#[derive(Clone)]
+pub struct NodeState {
+    // Best dist to/from node
+    pub to_dist: OrderedFloat<f64>,
+    pub from_dist: OrderedFloat<f64>,
+
+    // Best (node, edge) to/from node
+    pub previous: Option<(usize, usize)>,
+    pub successive: Option<(usize, usize)>,
+}
+*/
 
 #[cfg(test)]
 mod tests {
