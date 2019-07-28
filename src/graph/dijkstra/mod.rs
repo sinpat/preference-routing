@@ -175,22 +175,28 @@ impl<'a> Dijkstra<'a> {
 
 pub fn find_path(
     graph: &Graph,
-    source: usize,
-    target: usize,
+    include: Vec<usize>,
     avoid: Vec<usize>,
     alpha: [f64; EDGE_COST_DIMENSION],
 ) -> Option<DijkstraResult> {
     println!("Running Dijkstra search...");
-    /*
-    let mut results = Vec::new();
-    for index in 0..nodes.len() - 1 {
+    let mut path = Vec::new();
+    let mut coordinates = Vec::new();
+    let mut costs = [0.0, 0.0, 0.0];
+    let mut total_cost = 0.0;
+    for index in 0..include.len() - 1 {
         let mut dijkstra = Dijkstra::new(graph);
-        let output = dijkstra.run(nodes[index], nodes[index + 1], &avoid, alpha);
-        results.push(output);
+        if let Some(mut result) = dijkstra.run(include[index], include[index + 1], &avoid, alpha) {
+            path.append(&mut result.path);
+            coordinates.append(&mut result.coordinates);
+            costs = add_edge_costs(result.costs, costs);
+            total_cost += result.total_cost;
+        } else {
+            return None;
+        }
     };
     println!("Done");
-    */
-    Dijkstra::new(graph).run(source, target, &avoid, alpha)
+    Some(DijkstraResult { path, coordinates, costs, total_cost })
 }
 
 #[cfg(test)]

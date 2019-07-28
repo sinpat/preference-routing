@@ -24,28 +24,26 @@ pub fn get_preference(graph: &Graph, driven_routes: &Vec<DijkstraResult>) -> Opt
     problem += b.ge(0);
     problem += c.ge(0);
 
-    let mut alpha = solve(&problem, &solver);
-    loop {
-        if alpha.is_none() {
-            break;
-        }
+    while let Some(alpha) = solve(&problem, &solver) {
         let mut all_explained = true;
         for route in driven_routes {
             let source = route.path[0];
             let target = route.path[route.path.len() - 1];
-            let result = find_path(graph, source, target, Vec::new(), alpha.unwrap()).unwrap();
+            let result = find_path(graph, vec![source, target], Vec::new(), alpha).unwrap();
             if route.total_cost > result.total_cost {
                 all_explained = false;
-                // add strange constraint
+                /*
+                problem += ((route.costs[0] - result.costs[0]) * a).le(0);
+                problem += ((route.costs[1] - result.costs[1]) * b).le(0);
+                problem += ((route.costs[2] - result.costs[2]) * c).le(0);
+                */
             }
         }
         if all_explained {
-            break;
-        } else {
-            alpha = solve(&problem, &solver);
+            return Some(alpha);
         }
     }
-    alpha
+    None
 }
 
 fn solve(problem: &LpProblem, solver: &GlpkSolver) -> Option<[f64; EDGE_COST_DIMENSION]> {

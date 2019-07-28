@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 
-use actix_web::{App, HttpResponse, web, HttpServer};
+use actix_cors::Cors;
+use actix_web::{App, HttpResponse, HttpServer, web};
 use serde::{Deserialize, Serialize};
 
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
@@ -11,9 +12,7 @@ use crate::lp::get_preference;
 
 #[derive(Deserialize, Debug)]
 struct FspRequest {
-    // way_points: Vec<Coordinate>,
-    source: Coordinate,
-    target: Coordinate,
+    include: Vec<Coordinate>,
     avoid: Vec<Coordinate>,
 }
 
@@ -81,10 +80,10 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
 */
 
 fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let FspRequest {source, target, avoid} = body.into_inner();
+    let FspRequest { include, avoid } = body.into_inner();
     let graph = &state.graph;
     let alpha = *state.alpha.lock().unwrap();
-    let result = graph.find_shortest_path(source, target, avoid, alpha);
+    let result = graph.find_shortest_path(include, avoid, alpha);
     match result {
         None => HttpResponse::Ok().finish(),
         Some(path) => {
@@ -108,10 +107,12 @@ pub fn start_server(graph: Graph) {
     let state = web::Data::new(AppState {
         graph,
         driven_routes: Mutex::new(Vec::new()),
-        alpha: Mutex::new([0.0, 1.0, 0.0])
+        alpha: Mutex::new([0.0, 1.0, 0.0]),
     });
     HttpServer::new(move || {
         App::new()
+            .wrap(Cors::new()
+                .allowed_origin("http://localhost:8080"))
             .register_data(state.clone())
             .service(
                 web::scope("/routing")
