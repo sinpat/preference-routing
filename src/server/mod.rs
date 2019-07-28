@@ -7,22 +7,19 @@ use futures::future::Future;
 use serde::{Deserialize, Serialize};
 
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
+use crate::graph::dijkstra::DijkstraResult;
 use crate::graph::Graph;
 use crate::helpers::Coordinate;
 
 #[derive(Deserialize, Debug)]
 struct FspRequest {
-    source: Coordinate,
-    target: Coordinate,
-    include: Vec<Coordinate>,
+    way_points: Vec<Coordinate>,
     avoid: Vec<Coordinate>,
 }
 
 #[derive(Serialize, Debug)]
-struct Path<'a> {
-    waypoints: Vec<&'a Coordinate>,
-    costs: [f64; EDGE_COST_DIMENSION],
-    total_cost: f64,
+struct FspResponse<'a> {
+    dijkstra_results: Vec<Option<DijkstraResult>>,
     alpha: [f64; EDGE_COST_DIMENSION],
     cost_tags: [&'a str; EDGE_COST_DIMENSION],
 }
@@ -51,6 +48,17 @@ fn verify_token(req: &HttpRequest) -> Box<dyn Future<Item=HttpResponse, Error=Er
         }).responder()
 }
 
+fn find_closest(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
+    req.json()
+        .from_err()
+        .and_then(move |point: Coordinate| {
+            let (location, _) = req.state().graph.find_closest_node(&point);
+            let response = HttpResponse::Ok().json(location);
+            Ok(response)
+        }).responder()
+}
+
+/*
 fn set_source(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
@@ -70,33 +78,23 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
             Ok(response)
         }).responder()
 }
+*/
 
 fn fsp(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
-        .and_then(move |FspRequest { source, target, include, avoid }| {
+        .and_then(move |FspRequest { way_points, avoid }| {
             let graph = &req.state().graph;
             let alpha = req.state().alpha;
-            let (_, source_id) = graph.find_closest_node(source);
-            let (_, target_id) = graph.find_closest_node(target);
-            let result = graph.find_shortest_path(source_id, target_id, include, avoid, alpha);
-            match result {
-                None => Ok(HttpResponse::Ok().finish()),
-                Some((node_path, costs, total_cost)) => {
-                    let waypoints = node_path
-                        .iter()
-                        .map(|node_id| &graph.nodes[*node_id].location)
-                        .collect();
-                    let body = Path {
-                        waypoints,
-                        costs,
-                        total_cost,
-                        alpha,
-                        cost_tags: EDGE_COST_TAGS,
-                    };
-                    Ok(HttpResponse::Ok().json(body))
-                }
-            }
+            let dijkstra_results =
+                graph.find_shortest_path(way_points, avoid, alpha);
+
+            let response = FspResponse {
+                dijkstra_results,
+                alpha,
+                cost_tags: EDGE_COST_TAGS,
+            };
+            Ok(HttpResponse::Ok().json(response))
         }).responder()
 }
 
@@ -120,8 +118,9 @@ pub fn start_server(graph: Graph) {
             App::with_state(state.clone())
                 .prefix("/routing")
                 .configure(|app| Cors::for_app(app)
-                    .resource("/source", |r| r.method(Method::POST).with(set_source))
-                    .resource("/target", |r| r.method(Method::POST).with(set_target))
+                    // .resource("/source", |r| r.method(Method::POST).with(set_source))
+                    // .resource("/target", |r| r.method(Method::POST).with(set_target))
+                    .resource("/closest", |r| r.method(Method::POST).with(find_closest))
                     .resource("/fsp", |r| r.method(Method::POST).with(fsp))
                     .register())
                 .boxed()

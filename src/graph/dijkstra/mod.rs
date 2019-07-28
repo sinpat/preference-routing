@@ -1,6 +1,7 @@
 use std::collections::binary_heap::BinaryHeap;
 
 use ordered_float::OrderedFloat;
+use serde::Serialize;
 
 use state::Direction::{BACKWARD, FORWARD};
 use state::State;
@@ -8,9 +9,18 @@ use state::State;
 use crate::EDGE_COST_DIMENSION;
 use crate::graph::Graph;
 use crate::helpers::{add_floats, Coordinate};
+
 use super::edge::add_edge_costs;
+use super::node::HalfNode;
 
 pub mod state;
+
+#[derive(Debug, Serialize)]
+pub struct DijkstraResult {
+    pub path: Vec<HalfNode>,
+    pub costs: [f64; EDGE_COST_DIMENSION],
+    pub total_cost: f64,
+}
 
 pub struct Dijkstra<'a> {
     graph: &'a Graph,
@@ -32,7 +42,7 @@ pub struct Dijkstra<'a> {
 }
 
 impl<'a> Dijkstra<'a> {
-    pub fn new(graph: &Graph) -> Dijkstra {
+    fn new(graph: &Graph) -> Dijkstra {
         let num_of_nodes = graph.nodes.len();
         Dijkstra {
             graph,
@@ -41,7 +51,7 @@ impl<'a> Dijkstra<'a> {
             from_dist: vec![([0.0, 0.0, 0.0], OrderedFloat(std::f64::MAX)); num_of_nodes],
             previous: vec![None; num_of_nodes],
             successive: vec![None; num_of_nodes],
-            best_node: (None, [0.0; EDGE_COST_DIMENSION],OrderedFloat(std::f64::MAX)),
+            best_node: (None, [0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
             /*
             state: vec![NodeState {
                 to_dist: OrderedFloat(std::f64::MAX),
@@ -53,14 +63,13 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    pub fn run(&mut self,
-               source: usize,
-               target: usize,
-               _include: Vec<Coordinate>,
-               _avoid: Vec<Coordinate>,
-               alpha: [f64; EDGE_COST_DIMENSION]
-    ) -> Option<(Vec<usize>, [f64; EDGE_COST_DIMENSION], f64)> {
-        println!("Running Dijkstra search...");
+    fn run(
+        &mut self,
+        source: usize,
+        target: usize,
+        _avoid: &Vec<usize>,
+        alpha: [f64; EDGE_COST_DIMENSION],
+    ) -> Option<DijkstraResult> {
         // Preparations
         self.candidates.push(State { node_id: source, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: FORWARD });
         self.candidates.push(State { node_id: target, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: BACKWARD });
@@ -79,8 +88,18 @@ impl<'a> Dijkstra<'a> {
             (None, _, _) => None,
             (Some(node_id), costs, total_cost) => {
                 println!("Found node {:?} with cost {:?}", node_id, total_cost);
-                let path = self.construct_path(node_id, source);
-                Some((path, costs, total_cost.into_inner()))
+                let path = self.construct_path(node_id, source)
+                    .iter()
+                    .map(|id| HalfNode { id: *id, location: Coordinate {
+                        lat: self.graph.nodes[*id].location.lat,
+                        lng: self.graph.nodes[*id].location.lng,
+                    } })
+                    .collect();
+                Some(DijkstraResult {
+                    path,
+                    costs,
+                    total_cost: total_cost.into_inner(),
+                })
             }
         }
     }
@@ -150,6 +169,23 @@ impl<'a> Dijkstra<'a> {
         }
         self.graph.unwrap_edges(path, source)
     }
+}
+
+pub fn find_path(
+    graph: &Graph,
+    nodes: Vec<usize>,
+    avoid: Vec<usize>,
+    alpha: [f64; EDGE_COST_DIMENSION],
+) -> Vec<Option<DijkstraResult>> {
+    println!("Running Dijkstra search...");
+    let mut results = Vec::new();
+    for index in 0..nodes.len() - 1 {
+        let mut dijkstra = Dijkstra::new(graph);
+        let output = dijkstra.run(nodes[index], nodes[index + 1], &avoid, alpha);
+        results.push(output);
+    };
+    println!("Done");
+    results
 }
 
 #[cfg(test)]

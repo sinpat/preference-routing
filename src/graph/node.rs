@@ -1,4 +1,12 @@
+use serde::Serialize;
+
 use crate::helpers::Coordinate;
+
+#[derive(Debug, Serialize)]
+pub struct HalfNode {
+    pub id: usize,
+    pub location: Coordinate,
+}
 
 #[derive(Debug)]
 pub struct Node {

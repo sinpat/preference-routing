@@ -4,12 +4,12 @@ use std::io::BufReader;
 
 use ordered_float::OrderedFloat;
 
+use dijkstra::DijkstraResult;
 use edge::{Edge, HalfEdge};
 use node::Node;
 
 use crate::EDGE_COST_DIMENSION;
 use crate::helpers::Coordinate;
-use crate::graph::dijkstra::Dijkstra;
 
 mod edge;
 mod node;
@@ -61,14 +61,19 @@ impl Graph {
 
     pub fn find_shortest_path(
         &self,
-        source: usize,
-        target: usize,
-        include: Vec<Coordinate>,
+        way_points: Vec<Coordinate>,
         avoid: Vec<Coordinate>,
         alpha: [f64; EDGE_COST_DIMENSION]
-    ) -> Option<(Vec<usize>, [f64; EDGE_COST_DIMENSION], f64)> {
-        let mut dijkstra = Dijkstra::new(self);
-        dijkstra.run(source, target, include, avoid, alpha)
+    ) -> Vec<Option<DijkstraResult>> {
+        let node_ids = way_points
+            .iter()
+            .map(|x| self.find_closest_node(x).1)
+            .collect();
+        let avoid_ids = avoid
+            .iter()
+            .map(|x| self.find_closest_node(x).1)
+            .collect();
+        dijkstra::find_path(self, node_ids, avoid_ids, alpha)
     }
 
     pub fn get_ch_edges_out(&self, node_id: usize) -> Vec<&HalfEdge> {
@@ -85,7 +90,7 @@ impl Graph {
             .collect()
     }
 
-    pub fn find_closest_node(&self, point: Coordinate) -> (&Coordinate, usize) {
+    pub fn find_closest_node(&self, point: &Coordinate) -> (&Coordinate, usize) {
         // TODO: Return Option
         let mut closest = &self.nodes[0];
         let mut distance = OrderedFloat(std::f64::MAX);
