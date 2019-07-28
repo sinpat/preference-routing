@@ -11,13 +11,13 @@ use crate::graph::Graph;
 use crate::helpers::{add_floats, Coordinate};
 
 use super::edge::add_edge_costs;
-use super::node::HalfNode;
 
 pub mod state;
 
 #[derive(Debug, Serialize)]
 pub struct DijkstraResult {
-    pub path: Vec<HalfNode>,
+    pub path: Vec<usize>,
+    pub coordinates: Vec<Coordinate>,
     pub costs: [f64; EDGE_COST_DIMENSION],
     pub total_cost: f64,
 }
@@ -88,15 +88,17 @@ impl<'a> Dijkstra<'a> {
             (None, _, _) => None,
             (Some(node_id), costs, total_cost) => {
                 println!("Found node {:?} with cost {:?}", node_id, total_cost);
-                let path = self.construct_path(node_id, source)
+                let path = self.construct_path(node_id, source);
+                let coordinates = path
                     .iter()
-                    .map(|id| HalfNode { id: *id, location: Coordinate {
+                    .map(|id| Coordinate {
                         lat: self.graph.nodes[*id].location.lat,
                         lng: self.graph.nodes[*id].location.lng,
-                    } })
+                    })
                     .collect();
                 Some(DijkstraResult {
                     path,
+                    coordinates,
                     costs,
                     total_cost: total_cost.into_inner(),
                 })
@@ -173,11 +175,13 @@ impl<'a> Dijkstra<'a> {
 
 pub fn find_path(
     graph: &Graph,
-    nodes: Vec<usize>,
+    source: usize,
+    target: usize,
     avoid: Vec<usize>,
     alpha: [f64; EDGE_COST_DIMENSION],
-) -> Vec<Option<DijkstraResult>> {
+) -> Option<DijkstraResult> {
     println!("Running Dijkstra search...");
+    /*
     let mut results = Vec::new();
     for index in 0..nodes.len() - 1 {
         let mut dijkstra = Dijkstra::new(graph);
@@ -185,7 +189,8 @@ pub fn find_path(
         results.push(output);
     };
     println!("Done");
-    results
+    */
+    Dijkstra::new(graph).run(source, target, &avoid, alpha)
 }
 
 #[cfg(test)]

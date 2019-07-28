@@ -1,5 +1,6 @@
 mod graph;
 mod helpers;
+mod lp;
 mod server;
 
 const GRAPH_FILE: &str = "/home/patrick/Uni/Bachelor/Bachelorarbeit/data/ba-wue/concGraph";

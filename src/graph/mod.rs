@@ -61,19 +61,24 @@ impl Graph {
 
     pub fn find_shortest_path(
         &self,
-        way_points: Vec<Coordinate>,
+        source: Coordinate,
+        target: Coordinate,
         avoid: Vec<Coordinate>,
         alpha: [f64; EDGE_COST_DIMENSION]
-    ) -> Vec<Option<DijkstraResult>> {
+    ) -> Option<DijkstraResult> {
+        let source_id = self.find_closest_node(&source).1;
+        let target_id = self.find_closest_node(&target).1;
+        /*
         let node_ids = way_points
             .iter()
             .map(|x| self.find_closest_node(x).1)
             .collect();
+        */
         let avoid_ids = avoid
             .iter()
             .map(|x| self.find_closest_node(x).1)
             .collect();
-        dijkstra::find_path(self, node_ids, avoid_ids, alpha)
+        dijkstra::find_path(self, source_id, target_id, avoid_ids, alpha)
     }
 
     pub fn get_ch_edges_out(&self, node_id: usize) -> Vec<&HalfEdge> {

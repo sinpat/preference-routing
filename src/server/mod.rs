@@ -1,29 +1,30 @@
-use std::sync::Arc;
+use std::sync::Mutex;
 
-use actix_web::{App, AsyncResponder, Error, HttpMessage, HttpRequest, HttpResponse, server};
-use actix_web::http::Method;
-use actix_web::middleware::cors::Cors;
-use futures::future::Future;
+use actix_web::{App, HttpResponse, web, HttpServer};
 use serde::{Deserialize, Serialize};
 
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 use crate::graph::dijkstra::DijkstraResult;
 use crate::graph::Graph;
 use crate::helpers::Coordinate;
+use crate::lp::get_preference;
 
 #[derive(Deserialize, Debug)]
 struct FspRequest {
-    way_points: Vec<Coordinate>,
+    // way_points: Vec<Coordinate>,
+    source: Coordinate,
+    target: Coordinate,
     avoid: Vec<Coordinate>,
 }
 
 #[derive(Serialize, Debug)]
 struct FspResponse<'a> {
-    dijkstra_results: Vec<Option<DijkstraResult>>,
+    path: DijkstraResult,
     alpha: [f64; EDGE_COST_DIMENSION],
     cost_tags: [&'a str; EDGE_COST_DIMENSION],
 }
 
+/*
 fn register(_req: &HttpRequest) -> HttpResponse {
     HttpResponse::Ok()
         .body("register user")
@@ -48,7 +49,7 @@ fn verify_token(req: &HttpRequest) -> Box<dyn Future<Item=HttpResponse, Error=Er
         }).responder()
 }
 
-fn find_closest(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
+fn find_closest(req: HttpRequest) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
         .and_then(move |point: Coordinate| {
@@ -58,7 +59,6 @@ fn find_closest(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResp
         }).responder()
 }
 
-/*
 fn set_source(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     req.json()
         .from_err()
@@ -80,51 +80,42 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
 }
 */
 
-fn fsp(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    req.json()
-        .from_err()
-        .and_then(move |FspRequest { way_points, avoid }| {
-            let graph = &req.state().graph;
-            let alpha = req.state().alpha;
-            let dijkstra_results =
-                graph.find_shortest_path(way_points, avoid, alpha);
-
-            let response = FspResponse {
-                dijkstra_results,
+fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse {
+    let FspRequest {source, target, avoid} = body.into_inner();
+    let graph = &state.graph;
+    let alpha = *state.alpha.lock().unwrap();
+    let result = graph.find_shortest_path(source, target, avoid, alpha);
+    match result {
+        None => HttpResponse::Ok().finish(),
+        Some(path) => {
+            /*
+            *state.driven_routes.lock().unwrap() = vec![path];
+            if let Some(new_pref) = get_preference(graph, &*state.driven_routes.lock().unwrap()) {
+                *state.alpha.lock().unwrap() = new_pref;
+            }
+            */
+            HttpResponse::Ok().json(FspResponse {
+                path,
                 alpha,
                 cost_tags: EDGE_COST_TAGS,
-            };
-            Ok(HttpResponse::Ok().json(response))
-        }).responder()
+            })
+        }
+    }
 }
 
 pub fn start_server(graph: Graph) {
     println!("Starting server");
-    let state = Arc::new(AppState {
+    let state = web::Data::new(AppState {
         graph,
-        // unsuitability, dist, height
-        alpha: [0.0, 1.0, 0.0],
+        driven_routes: Mutex::new(Vec::new()),
+        alpha: Mutex::new([0.0, 1.0, 0.0])
     });
-    server::new(move || {
-        vec![
-            App::new()
-                .prefix("/user")
-                .configure(|app| Cors::for_app(app)
-                    .resource("/register", |r| r.method(Method::POST).f(register))
-                    .resource("/login", |r| r.method(Method::POST).f(login))
-                    .resource("/verify", |r| r.method(Method::POST).f(verify_token))
-                    .register())
-                .boxed(),
-            App::with_state(state.clone())
-                .prefix("/routing")
-                .configure(|app| Cors::for_app(app)
-                    // .resource("/source", |r| r.method(Method::POST).with(set_source))
-                    // .resource("/target", |r| r.method(Method::POST).with(set_target))
-                    .resource("/closest", |r| r.method(Method::POST).with(find_closest))
-                    .resource("/fsp", |r| r.method(Method::POST).with(fsp))
-                    .register())
-                .boxed()
-        ]
+    HttpServer::new(move || {
+        App::new()
+            .register_data(state.clone())
+            .service(
+                web::scope("/routing")
+                    .route("/fsp", web::post().to(fsp)))
     })
         .bind("localhost:8000")
         .expect("Can not bind to port 8000")
@@ -133,7 +124,8 @@ pub fn start_server(graph: Graph) {
 
 struct AppState {
     graph: Graph,
-    alpha: [f64; EDGE_COST_DIMENSION],
+    driven_routes: Mutex<Vec<DijkstraResult>>,
+    alpha: Mutex<[f64; EDGE_COST_DIMENSION]>,
 }
 
 #[cfg(test)]
