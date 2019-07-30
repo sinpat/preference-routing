@@ -5,7 +5,7 @@ pub fn add_floats(a: OrderedFloat<f64>, b: OrderedFloat<f64>) -> OrderedFloat<f6
     OrderedFloat(a.0 + b.0)
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Coordinate {
     pub lat: f64,
     pub lng: f64,

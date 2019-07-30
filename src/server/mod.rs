@@ -13,7 +13,6 @@ use crate::lp::get_preference;
 #[derive(Deserialize, Debug)]
 struct FspRequest {
     include: Vec<Coordinate>,
-    avoid: Vec<Coordinate>,
 }
 
 #[derive(Serialize, Debug)]
@@ -80,22 +79,21 @@ fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpRespon
 */
 
 fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let FspRequest { include, avoid } = body.into_inner();
+    let FspRequest { include } = body.into_inner();
     let graph = &state.graph;
-    let alpha = *state.alpha.lock().unwrap();
-    let result = graph.find_shortest_path(include, avoid, alpha);
+    let mut alpha = state.alpha.lock().unwrap();
+    let old_alpha = *alpha;
+    let result = graph.find_shortest_path(include, *alpha);
     match result {
         None => HttpResponse::Ok().finish(),
         Some(path) => {
-            /*
-            *state.driven_routes.lock().unwrap() = vec![path];
+            *state.driven_routes.lock().unwrap() = vec![path.clone()];
             if let Some(new_pref) = get_preference(graph, &*state.driven_routes.lock().unwrap()) {
-                *state.alpha.lock().unwrap() = new_pref;
+                *alpha = new_pref;
             }
-            */
             HttpResponse::Ok().json(FspResponse {
                 path,
-                alpha,
+                alpha: old_alpha,
                 cost_tags: EDGE_COST_TAGS,
             })
         }

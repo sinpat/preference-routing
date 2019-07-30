@@ -27,6 +27,8 @@ pub struct Graph {
 
 impl Graph {
     fn new(mut nodes: Vec<Node>, mut edges: Vec<Edge>) -> Graph {
+        // Only add half_edges to vectors that lead to higher/lower ch-levels
+        // This saves filtering the half_edges for a node
         println!("Constructing graph...");
         let mut offsets_out: Vec<usize> = vec![0; nodes.len() + 1];
         let mut offsets_in: Vec<usize> = vec![0; nodes.len() + 1];
@@ -59,21 +61,13 @@ impl Graph {
         Graph { nodes, edges, offsets_in, offsets_out, half_edges_in, half_edges_out }
     }
 
-    pub fn find_shortest_path(
-        &self,
-        include: Vec<Coordinate>,
-        avoid: Vec<Coordinate>,
-        alpha: [f64; EDGE_COST_DIMENSION]
-    ) -> Option<DijkstraResult> {
+    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: [f64; EDGE_COST_DIMENSION])
+        -> Option<DijkstraResult> {
         let include_ids = include
             .iter()
             .map(|x| self.find_closest_node(x).1)
             .collect();
-        let avoid_ids = avoid
-            .iter()
-            .map(|x| self.find_closest_node(x).1)
-            .collect();
-        dijkstra::find_path(self, include_ids, avoid_ids, alpha)
+        dijkstra::find_path(self, include_ids, alpha)
     }
 
     pub fn get_ch_edges_out(&self, node_id: usize) -> Vec<&HalfEdge> {

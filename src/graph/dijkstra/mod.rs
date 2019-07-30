@@ -14,7 +14,7 @@ use super::edge::add_edge_costs;
 
 pub mod state;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct DijkstraResult {
     pub path: Vec<usize>,
     pub coordinates: Vec<Coordinate>,
@@ -63,13 +63,8 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    fn run(
-        &mut self,
-        source: usize,
-        target: usize,
-        _avoid: &Vec<usize>,
-        alpha: [f64; EDGE_COST_DIMENSION],
-    ) -> Option<DijkstraResult> {
+    fn run(&mut self, source: usize, target: usize, alpha: [f64; EDGE_COST_DIMENSION])
+        -> Option<DijkstraResult> {
         // Preparations
         self.candidates.push(State { node_id: source, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: FORWARD });
         self.candidates.push(State { node_id: target, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: BACKWARD });
@@ -173,12 +168,8 @@ impl<'a> Dijkstra<'a> {
     }
 }
 
-pub fn find_path(
-    graph: &Graph,
-    include: Vec<usize>,
-    avoid: Vec<usize>,
-    alpha: [f64; EDGE_COST_DIMENSION],
-) -> Option<DijkstraResult> {
+pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: [f64; EDGE_COST_DIMENSION])
+    -> Option<DijkstraResult> {
     println!("Running Dijkstra search...");
     let mut path = Vec::new();
     let mut coordinates = Vec::new();
@@ -186,7 +177,7 @@ pub fn find_path(
     let mut total_cost = 0.0;
     for index in 0..include.len() - 1 {
         let mut dijkstra = Dijkstra::new(graph);
-        if let Some(mut result) = dijkstra.run(include[index], include[index + 1], &avoid, alpha) {
+        if let Some(mut result) = dijkstra.run(include[index], include[index + 1], alpha) {
             path.append(&mut result.path);
             coordinates.append(&mut result.coordinates);
             costs = add_edge_costs(result.costs, costs);
@@ -195,6 +186,13 @@ pub fn find_path(
             return None;
         }
     };
+    /*
+    include.windows(2)
+        .fold(DijkstraResult::new(), |mut acc, cur| {
+            let mut dijk = Dijkstra::new(graph);
+            dijk.run(points[0], points[1], &avoid, alpha)
+    });
+    */
     println!("Done");
     Some(DijkstraResult { path, coordinates, costs, total_cost })
 }

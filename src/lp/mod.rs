@@ -11,15 +11,15 @@ pub fn get_preference(graph: &Graph, driven_routes: &Vec<DijkstraResult>) -> Opt
     let mut problem = LpProblem::new("Find Preference", LpObjective::Minimize);
     let solver = GlpkSolver::new();
 
-    let a = &LpInteger::new("unsuit");
-    let b = &LpInteger::new("distance");
-    let c = &LpInteger::new("height");
+    let a = LpInteger::new("unsuit");
+    let b = LpInteger::new("distance");
+    let c = LpInteger::new("height");
 
     // Objective Function
-    problem += c;
+    // problem += &c;
 
     // Constraints
-    problem += (a + b + c).equal(1);
+    problem += (&a + &b + &c).equal(1);
     problem += a.ge(0);
     problem += b.ge(0);
     problem += c.ge(0);
@@ -29,14 +29,12 @@ pub fn get_preference(graph: &Graph, driven_routes: &Vec<DijkstraResult>) -> Opt
         for route in driven_routes {
             let source = route.path[0];
             let target = route.path[route.path.len() - 1];
-            let result = find_path(graph, vec![source, target], Vec::new(), alpha).unwrap();
+            let result = find_path(graph, vec![source, target], alpha).unwrap();
             if route.total_cost > result.total_cost {
                 all_explained = false;
-                /*
-                problem += ((route.costs[0] - result.costs[0]) * a).le(0);
-                problem += ((route.costs[1] - result.costs[1]) * b).le(0);
-                problem += ((route.costs[2] - result.costs[2]) * c).le(0);
-                */
+                problem += (((route.costs[0] - result.costs[0]) as f32 * &a)
+                    + ((route.costs[1] - result.costs[1]) as f32 * &b)
+                    + ((route.costs[2] - result.costs[2]) as f32 * &c)).le(0);
             }
         }
         if all_explained {
@@ -56,10 +54,10 @@ fn solve(problem: &LpProblem, solver: &GlpkSolver) -> Option<[f64; EDGE_COST_DIM
                 alpha[index] = f64::from(*value);
             }
             Some(alpha)
-        },
+        }
         Err(msg) => {
             println!("LpError: {}", msg);
             None
-        },
+        }
     }
 }
