@@ -15,7 +15,7 @@ pub struct State {
     pub costs: [f64; EDGE_COST_DIMENSION],
     // cost including alpha
     pub total_cost: OrderedFloat<f64>,
-    pub direction: Direction
+    pub direction: Direction,
 }
 
 impl std::cmp::Eq for State {}
@@ -33,18 +33,27 @@ impl std::cmp::PartialOrd for State {
     }
 }
 
-/*
 #[derive(Clone)]
 pub struct NodeState {
     // Best dist to/from node
-    pub to_dist: OrderedFloat<f64>,
-    pub from_dist: OrderedFloat<f64>,
+    pub to_dist: ([f64; EDGE_COST_DIMENSION], OrderedFloat<f64>),
+    pub from_dist: ([f64; EDGE_COST_DIMENSION], OrderedFloat<f64>),
 
     // Best (node, edge) to/from node
     pub previous: Option<(usize, usize)>,
     pub successive: Option<(usize, usize)>,
 }
-*/
+
+impl NodeState {
+    pub fn new() -> Self {
+        NodeState {
+            to_dist: ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
+            from_dist: ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
+            previous: None,
+            successive: None,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
