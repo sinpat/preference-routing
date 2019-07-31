@@ -1,5 +1,6 @@
 use std::collections::binary_heap::BinaryHeap;
 use std::collections::HashSet;
+use std::time::Instant;
 
 use ordered_float::OrderedFloat;
 use serde::Serialize;
@@ -12,7 +13,6 @@ use crate::graph::Graph;
 use crate::helpers::{add_floats, Coordinate};
 
 use super::edge::add_edge_costs;
-use std::panic::resume_unwind;
 
 pub mod state;
 
@@ -74,14 +74,18 @@ impl<'a> Dijkstra<'a> {
         -> Option<DijkstraResult> {
         self.prepare(source, target);
 
-        // TODO: Implement termination condition
+        // TODO: Implement termination condition?
+        let now = Instant::now();
         while let Some(candidate) = self.candidates.pop() {
             self.process_state(candidate, alpha);
         }
         match self.best_node {
             (None, _, _) => None,
             (Some(node_id), costs, total_cost) => {
-                println!("Found node {:?} with cost {:?}", node_id, total_cost);
+                println!("Found node {:?} with cost {:?} in {:?}ms",
+                         node_id,
+                         total_cost,
+                         now.elapsed().as_millis());
                 let path = self.construct_path(node_id, source);
                 let coordinates = path
                     .iter()

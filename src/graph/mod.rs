@@ -27,27 +27,36 @@ pub struct Graph {
 
 impl Graph {
     fn new(mut nodes: Vec<Node>, mut edges: Vec<Edge>) -> Graph {
-        // Only add half_edges to vectors that lead to higher/lower ch-levels
-        // This saves filtering the half_edges for a node
         println!("Constructing graph...");
         let mut offsets_out: Vec<usize> = vec![0; nodes.len() + 1];
         let mut offsets_in: Vec<usize> = vec![0; nodes.len() + 1];
         let mut half_edges_out: Vec<HalfEdge> = Vec::new();
         let mut half_edges_in: Vec<HalfEdge> = Vec::new();
 
-        // edges and offsets out
-        edges.sort_by(|a, b| a.source_id.cmp(&b.source_id));
-        for edge in &edges {
-            offsets_out[edge.source_id + 1] += 1;
-            half_edges_out.push(HalfEdge::new(edge.id, edge.target_id, edge.edge_costs));
-        }
+        // sort nodes by id
+        nodes.sort_by(|a, b| a.id.cmp(&b.id));
 
-        // edges and offsets in
+        // half_edges and offsets out
+        edges.sort_by(|a, b| a.source_id.cmp(&b.source_id));
+        edges
+            .iter()
+            .filter(|edge|
+                nodes[edge.target_id].ch_level >= nodes[edge.source_id].ch_level)
+            .for_each(|edge| {
+                offsets_out[edge.source_id + 1] += 1;
+                half_edges_out.push(HalfEdge::new(edge.id, edge.target_id, edge.edge_costs));
+            });
+
+        // half_edges and offsets in
         edges.sort_by(|a, b| a.target_id.cmp(&b.target_id));
-        for edge in &edges {
-            offsets_in[edge.target_id + 1] += 1;
-            half_edges_in.push(HalfEdge::new(edge.id, edge.source_id, edge.edge_costs));
-        }
+        edges
+            .iter()
+            .filter(|edge|
+                nodes[edge.source_id].ch_level >= nodes[edge.target_id].ch_level)
+            .for_each(|edge| {
+                offsets_in[edge.target_id + 1] += 1;
+                half_edges_in.push(HalfEdge::new(edge.id, edge.source_id, edge.edge_costs));
+            });
 
         // finish offset arrays
         for index in 1..offsets_out.len() {
@@ -55,9 +64,8 @@ impl Graph {
             offsets_in[index] += offsets_in[index - 1];
         }
 
-        // sort nodes and edges by id
+        // sort edges by id
         edges.sort_by(|a, b| a.id.cmp(&b.id));
-        nodes.sort_by(|a, b| a.id.cmp(&b.id));
         Graph { nodes, edges, offsets_in, offsets_out, half_edges_in, half_edges_out }
     }
 
@@ -70,18 +78,12 @@ impl Graph {
         dijkstra::find_path(self, include_ids, alpha)
     }
 
-    pub fn get_ch_edges_out(&self, node_id: usize) -> Vec<&HalfEdge> {
-        self.get_edges_out(node_id)
-            .iter()
-            .filter(|x| self.nodes[x.target_id].ch_level >= self.nodes[node_id].ch_level)
-            .collect()
+    pub fn get_ch_edges_out(&self, node_id: usize) -> &[HalfEdge] {
+        &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
     }
 
-    pub fn get_ch_edges_in(&self, node_id: usize) -> Vec<&HalfEdge> {
-        self.get_edges_in(node_id)
-            .iter()
-            .filter(|x| self.nodes[x.target_id].ch_level >= self.nodes[node_id].ch_level)
-            .collect()
+    pub fn get_ch_edges_in(&self, node_id: usize) -> &[HalfEdge] {
+        &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
     }
 
     pub fn find_closest_node(&self, point: &Coordinate) -> (&Coordinate, usize) {
@@ -96,14 +98,6 @@ impl Graph {
             }
         }
         (&closest.location, closest.id)
-    }
-
-    fn get_edges_out(&self, node_id: usize) -> &[HalfEdge] {
-        &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
-    }
-
-    fn get_edges_in(&self, node_id: usize) -> &[HalfEdge] {
-        &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
     }
 
     pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<usize> {
