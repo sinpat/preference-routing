@@ -1,4 +1,5 @@
 use std::collections::binary_heap::BinaryHeap;
+use std::collections::HashSet;
 
 use ordered_float::OrderedFloat;
 use serde::Serialize;
@@ -11,6 +12,7 @@ use crate::graph::Graph;
 use crate::helpers::{add_floats, Coordinate};
 
 use super::edge::add_edge_costs;
+use std::panic::resume_unwind;
 
 pub mod state;
 
@@ -25,6 +27,7 @@ pub struct DijkstraResult {
 pub struct Dijkstra<'a> {
     graph: &'a Graph,
     candidates: BinaryHeap<State>,
+    touched_nodes: HashSet<usize>,
 
     // Contains all the information about the nodes
     node_states: Vec<NodeState>,
@@ -39,24 +42,43 @@ impl<'a> Dijkstra<'a> {
         Dijkstra {
             graph,
             candidates: BinaryHeap::new(),
+            touched_nodes: HashSet::new(),
             node_states: vec![NodeState::new(); num_of_nodes],
             best_node: (None, [0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
         }
     }
 
-    fn run(&mut self, source: usize, target: usize, alpha: [f64; EDGE_COST_DIMENSION])
-        -> Option<DijkstraResult> {
-        // Preparations
+    fn prepare(&mut self, source: usize, target: usize) {
+        // Candidates
+        self.candidates = BinaryHeap::new();
         self.candidates.push(State { node_id: source, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: FORWARD });
         self.candidates.push(State { node_id: target, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: BACKWARD });
+
+        // Touched nodes
+        for node_id in &self.touched_nodes {
+            self.node_states[*node_id] = NodeState::new();
+        }
+        self.touched_nodes = HashSet::new();
+
+        // Node states
         self.node_states[source].to_dist.1 = OrderedFloat(0.0);
         self.node_states[target].from_dist.1 = OrderedFloat(0.0);
+        self.touched_nodes.insert(source);
+        self.touched_nodes.insert(target);
 
+        // Best node
+        self.best_node = (None, [0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX));
+    }
+
+    fn run(&mut self, source: usize, target: usize, alpha: [f64; EDGE_COST_DIMENSION])
+        -> Option<DijkstraResult> {
+        self.prepare(source, target);
+
+        // TODO: Implement termination condition
         while let Some(candidate) = self.candidates.pop() {
             self.process_state(candidate, alpha);
         }
         match self.best_node {
-            // TODO: Think about wrapping the whole tuple in an option, not just the node_id
             (None, _, _) => None,
             (Some(node_id), costs, total_cost) => {
                 println!("Found node {:?} with cost {:?}", node_id, total_cost);
@@ -101,6 +123,7 @@ impl<'a> Dijkstra<'a> {
                 if next.total_cost < next_node_state.to_dist.1 {
                     next_node_state.to_dist = (next.costs, next.total_cost);
                     next_node_state.previous = Some((node_id, half_edge.edge_id));
+                    self.touched_nodes.insert(next.node_id);
                     self.candidates.push(next);
                 }
             };
@@ -126,6 +149,7 @@ impl<'a> Dijkstra<'a> {
                 if next.total_cost < next_node_state.from_dist.1 {
                     next_node_state.from_dist = (next.costs, next.total_cost);
                     next_node_state.successive = Some((node_id, half_edge.edge_id));
+                    self.touched_nodes.insert(next.node_id);
                     self.candidates.push(next);
                 }
             }
@@ -152,32 +176,25 @@ impl<'a> Dijkstra<'a> {
 
 pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: [f64; EDGE_COST_DIMENSION])
     -> Option<DijkstraResult> {
-    // TODO: Do not create new Dijkstra for every run, instead track which nodes were touched and only cleanup these node_states
     println!("Running Dijkstra search...");
-    let mut path = Vec::new();
-    let mut coordinates = Vec::new();
-    let mut costs = [0.0, 0.0, 0.0];
-    let mut total_cost = 0.0;
-    for index in 0..include.len() - 1 {
-        let mut dijkstra = Dijkstra::new(graph);
-        if let Some(mut result) = dijkstra.run(include[index], include[index + 1], alpha) {
-            path.append(&mut result.path);
-            coordinates.append(&mut result.coordinates);
-            costs = add_edge_costs(result.costs, costs);
-            total_cost += result.total_cost;
-        } else {
-            return None;
-        }
-    };
-    /*
-    include.windows(2)
-        .fold(DijkstraResult::new(), |mut acc, cur| {
-            let mut dijk = Dijkstra::new(graph);
-            dijk.run(points[0], points[1], &avoid, alpha)
-    });
-    */
+    let mut dijkstra = Dijkstra::new(graph);
+    let result = include.windows(2)
+        .fold(DijkstraResult {
+            path: Vec::new(),
+            coordinates: Vec::new(),
+            costs: [0.0; EDGE_COST_DIMENSION],
+            total_cost: 0.0
+        }, |mut acc, win| {
+            if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
+                acc.path.append(&mut result.path);
+                acc.coordinates.append(&mut result.coordinates);
+                acc.costs = add_edge_costs(acc.costs, result.costs);
+                acc.total_cost += result.total_cost;
+            }
+            acc
+        });
     println!("Done");
-    Some(DijkstraResult { path, coordinates, costs, total_cost })
+    Some(result)
 }
 
 #[cfg(test)]
