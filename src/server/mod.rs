@@ -83,7 +83,7 @@ fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse 
     let graph = &state.graph;
     let mut alpha = state.alpha.lock().unwrap();
     let old_alpha = *alpha;
-    let result = graph.find_shortest_path(include, *alpha);
+    let result = graph.find_shortest_path(include, old_alpha);
     match result {
         None => HttpResponse::Ok().finish(),
         Some(path) => {
@@ -105,7 +105,7 @@ pub fn start_server(graph: Graph) {
     let state = web::Data::new(AppState {
         graph,
         driven_routes: Mutex::new(Vec::new()),
-        alpha: Mutex::new([0.0, 1.0, 0.0]),
+        alpha: Mutex::new([1.0, 0.0, 0.0]),
     });
     HttpServer::new(move || {
         App::new()
@@ -118,7 +118,8 @@ pub fn start_server(graph: Graph) {
     })
         .bind("localhost:8000")
         .expect("Can not bind to port 8000")
-        .run();
+        .run()
+        .unwrap();
 }
 
 struct AppState {
