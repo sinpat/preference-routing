@@ -13,3 +13,5 @@ Cargo.lock
 .idea/
 *.iml
 
+# Text files for debugging
+lp_formulation
