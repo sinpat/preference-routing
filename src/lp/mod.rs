@@ -57,7 +57,7 @@ fn solve(problem: &LpProblem, solver: &GlpkSolver) -> Option<[f64; EDGE_COST_DIM
             println!("Status: {:?}", status);
             let mut alpha = [0.0; EDGE_COST_DIMENSION];
             for (name, value) in var_values.iter() {
-                println!("value of {}: {}", name, value);
+                println!("Value of {}: {}", name, value);
                 for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {
                     if name == tag {
                         alpha[index] = f64::from(*value);

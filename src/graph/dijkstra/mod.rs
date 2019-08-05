@@ -24,6 +24,17 @@ pub struct DijkstraResult {
     pub total_cost: f64,
 }
 
+impl DijkstraResult {
+    pub fn new() -> Self {
+        DijkstraResult {
+            path: Vec::new(),
+            coordinates: Vec::new(),
+            costs: [0.0; EDGE_COST_DIMENSION],
+            total_cost: 0.0
+        }
+    }
+}
+
 pub struct Dijkstra<'a> {
     graph: &'a Graph,
     candidates: BinaryHeap<State>,
@@ -180,15 +191,10 @@ impl<'a> Dijkstra<'a> {
 
 pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: [f64; EDGE_COST_DIMENSION])
     -> Option<DijkstraResult> {
-    println!("Running Dijkstra search...");
+    println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
     let result = include.windows(2)
-        .fold(DijkstraResult {
-            path: Vec::new(),
-            coordinates: Vec::new(),
-            costs: [0.0; EDGE_COST_DIMENSION],
-            total_cost: 0.0
-        }, |mut acc, win| {
+        .fold(DijkstraResult::new(), |mut acc, win| {
             if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
                 acc.path.append(&mut result.path);
                 acc.coordinates.append(&mut result.coordinates);

@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use actix_cors::Cors;
 use actix_web::{App, HttpResponse, HttpServer, web};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 use crate::graph::dijkstra::DijkstraResult;
@@ -10,10 +10,7 @@ use crate::graph::Graph;
 use crate::helpers::Coordinate;
 use crate::lp::get_preference;
 
-#[derive(Deserialize, Debug)]
-struct FspRequest {
-    include: Vec<Coordinate>,
-}
+type FspRequest = Vec<Coordinate>;
 
 #[derive(Serialize, Debug)]
 struct FspResponse<'a> {
@@ -22,81 +19,45 @@ struct FspResponse<'a> {
     cost_tags: [&'a str; EDGE_COST_DIMENSION],
 }
 
-/*
-fn register(_req: &HttpRequest) -> HttpResponse {
-    HttpResponse::Ok()
-        .body("register user")
-}
+fn find_closest(body: web::Json<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
+    let graph = &state.graph;
+    let point = body.into_inner();
 
-fn login(_req: &HttpRequest) -> HttpResponse {
-    HttpResponse::Ok()
-        .header("Authorization", "foobar")
-        .finish()
+    let (location, _) = graph.find_closest_node(&point);
+    HttpResponse::Ok().json(location)
 }
-
-fn verify_token(req: &HttpRequest) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    req.json()
-        .from_err()
-        .and_then(|token: String| {
-            let response = if token == "foobar" {
-                HttpResponse::Ok().finish()
-            } else {
-                HttpResponse::Unauthorized().finish()
-            };
-            Ok(response)
-        }).responder()
-}
-
-fn find_closest(req: HttpRequest) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    req.json()
-        .from_err()
-        .and_then(move |point: Coordinate| {
-            let (location, _) = req.state().graph.find_closest_node(&point);
-            let response = HttpResponse::Ok().json(location);
-            Ok(response)
-        }).responder()
-}
-
-fn set_source(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    req.json()
-        .from_err()
-        .and_then(move |source: Coordinate| {
-            let (location, _) = req.state().graph.find_closest_node(source);
-            let response = HttpResponse::Ok().json(location);
-            Ok(response)
-        }).responder()
-}
-
-fn set_target(req: HttpRequest<Arc<AppState>>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
-    req.json()
-        .from_err()
-        .and_then(move |target: Coordinate| {
-            let (location, _) = req.state().graph.find_closest_node(target);
-            let response = HttpResponse::Ok().json(location);
-            Ok(response)
-        }).responder()
-}
-*/
 
 fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse {
-    let FspRequest { include } = body.into_inner();
+    let waypoints = body.into_inner();
     let graph = &state.graph;
-    let mut alpha = state.alpha.lock().unwrap();
-    let old_alpha = *alpha;
-    let result = graph.find_shortest_path(include, old_alpha);
-    match result {
+    let alpha = *state.alpha.lock().unwrap();
+
+    match graph.find_shortest_path(waypoints, alpha) {
         None => HttpResponse::Ok().finish(),
         Some(path) => {
-            *state.driven_routes.lock().unwrap() = vec![path.clone()];
-            if let Some(new_pref) = get_preference(graph, &*state.driven_routes.lock().unwrap()) {
-                *alpha = new_pref;
-            }
+            *state.current_route.lock().unwrap() = path.clone();
             HttpResponse::Ok().json(FspResponse {
                 path,
-                alpha: old_alpha,
+                alpha,
                 cost_tags: EDGE_COST_TAGS,
             })
         }
+    }
+}
+
+fn calc_preference(state: web::Data<AppState>) -> HttpResponse {
+    let graph = &state.graph;
+    let mut current_route = state.current_route.lock().unwrap();
+    let mut user_routes = state.driven_routes.lock().unwrap();
+
+    user_routes.push(current_route.clone());
+    *current_route = DijkstraResult::new();
+    match get_preference(graph, &*user_routes) {
+        Some(new_pref) => {
+            *state.alpha.lock().unwrap() = new_pref;
+            HttpResponse::Ok().json(new_pref)
+        },
+        None => HttpResponse::Ok().finish()
     }
 }
 
@@ -105,6 +66,7 @@ pub fn start_server(graph: Graph) {
     let state = web::Data::new(AppState {
         graph,
         driven_routes: Mutex::new(Vec::new()),
+        current_route: Mutex::new(DijkstraResult::new()),
         alpha: Mutex::new([1.0, 0.0, 0.0]),
     });
     HttpServer::new(move || {
@@ -114,7 +76,10 @@ pub fn start_server(graph: Graph) {
             .register_data(state.clone())
             .service(
                 web::scope("/routing")
-                    .route("/fsp", web::post().to(fsp)))
+                    .route("/closest", web::post().to(find_closest))
+                    .route("/fsp", web::post().to(fsp))
+                    .route("/preference", web::post().to(calc_preference))
+            )
     })
         .bind("localhost:8000")
         .expect("Can not bind to port 8000")
@@ -125,6 +90,7 @@ pub fn start_server(graph: Graph) {
 struct AppState {
     graph: Graph,
     driven_routes: Mutex<Vec<DijkstraResult>>,
+    current_route: Mutex<DijkstraResult>,
     alpha: Mutex<[f64; EDGE_COST_DIMENSION]>,
 }
 
