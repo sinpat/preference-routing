@@ -12,7 +12,7 @@ use crate::EDGE_COST_DIMENSION;
 use crate::graph::Graph;
 use crate::helpers::{add_floats, Coordinate};
 
-use super::edge::add_edge_costs;
+use super::edge::{add_edge_costs, calc_total_cost};
 
 pub mod state;
 
@@ -131,7 +131,7 @@ impl<'a> Dijkstra<'a> {
                 let next = State {
                     node_id: half_edge.target_id,
                     costs: add_edge_costs(costs, half_edge.edge_costs),
-                    total_cost: add_floats(total_cost, half_edge.calc_costs(alpha)),
+                    total_cost: add_floats(total_cost, calc_total_cost(half_edge.edge_costs, alpha)),
                     direction,
                 };
                 let next_node_state = &mut self.node_states[next.node_id];
@@ -157,7 +157,7 @@ impl<'a> Dijkstra<'a> {
                 let next = State {
                     node_id: half_edge.target_id,
                     costs: add_edge_costs(costs, half_edge.edge_costs),
-                    total_cost: add_floats(total_cost, half_edge.calc_costs(alpha)),
+                    total_cost: add_floats(total_cost, calc_total_cost(half_edge.edge_costs, alpha)),
                     direction,
                 };
                 let next_node_state = &mut self.node_states[next.node_id];

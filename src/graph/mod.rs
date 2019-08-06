@@ -11,7 +11,7 @@ use node::Node;
 use crate::EDGE_COST_DIMENSION;
 use crate::helpers::Coordinate;
 
-mod edge;
+pub mod edge;
 mod node;
 pub mod dijkstra;
 

@@ -84,7 +84,7 @@ pub fn start_server(graph: Graph) {
         .bind("localhost:8000")
         .expect("Can not bind to port 8000")
         .run()
-        .unwrap();
+        .expect("Could not start sever");
 }
 
 struct AppState {

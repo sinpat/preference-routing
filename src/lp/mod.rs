@@ -4,6 +4,7 @@ use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpExpression, LpContinuous};
 
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
+use crate::graph::edge::calc_total_cost;
 use crate::graph::dijkstra::{DijkstraResult, find_path};
 use crate::graph::Graph;
 
@@ -32,8 +33,7 @@ pub fn get_preference(graph: &Graph, driven_routes: &[DijkstraResult]) -> Option
             let source = route.path[0];
             let target = route.path[route.path.len() - 1];
             let result = find_path(graph, vec![source, target], alpha).unwrap();
-            // TODO: Do not use total_cost, use cost with current alpha!
-            if route.total_cost > result.total_cost {
+            if calc_total_cost(route.costs, alpha).0 > result.total_cost {
                 all_explained = false;
                 println!("Not explained");
                 problem += EDGE_COST_TAGS

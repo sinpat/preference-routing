@@ -57,14 +57,15 @@ impl HalfEdge {
             edge_costs,
         }
     }
+}
 
-    pub fn calc_costs(&self, alpha: [f64; EDGE_COST_DIMENSION]) -> OrderedFloat<f64> {
-        self.edge_costs
-            .iter()
-            .zip(alpha.iter())
-            .fold(0.0, |acc, (cost, factor)| acc + cost * *factor)
-            .into()
-    }
+pub fn calc_total_cost(costs: [f64; EDGE_COST_DIMENSION], alpha: [f64; EDGE_COST_DIMENSION])
+    -> OrderedFloat<f64> {
+    costs
+        .iter()
+        .zip(alpha.iter())
+        .fold(0.0, |acc, (cost, factor)| acc + cost * factor)
+        .into()
 }
 
 pub fn add_edge_costs(a: [f64; EDGE_COST_DIMENSION], b: [f64; EDGE_COST_DIMENSION]) -> [f64; EDGE_COST_DIMENSION] {
