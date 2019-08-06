@@ -19,9 +19,9 @@ struct FspResponse<'a> {
     cost_tags: [&'a str; EDGE_COST_DIMENSION],
 }
 
-fn find_closest(body: web::Json<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
+fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
     let graph = &state.graph;
-    let point = body.into_inner();
+    let point = query.into_inner();
 
     let (location, _) = graph.find_closest_node(&point);
     HttpResponse::Ok().json(location)
@@ -76,7 +76,7 @@ pub fn start_server(graph: Graph) {
             .register_data(state.clone())
             .service(
                 web::scope("/routing")
-                    .route("/closest", web::post().to(find_closest))
+                    .route("/closest", web::get().to(find_closest))
                     .route("/fsp", web::post().to(fsp))
                     .route("/preference", web::post().to(calc_preference))
             )
