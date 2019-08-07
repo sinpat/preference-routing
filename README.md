@@ -13,4 +13,4 @@ Specification of Trajectories and Learning of User Preferences
 
 ## Run
 
-`./target/release/preference-routing`
+`./target/release/preference-routing [path/to/graph/file]`
