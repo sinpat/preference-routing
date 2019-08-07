@@ -203,7 +203,7 @@ pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: [f64; EDGE_COST_DIME
             }
             acc
         });
-    println!("=== Found path with total cost: {} ===", result.total_cost);
+    println!("=== Found path with costs: {:?} and total cost: {} ===", result.costs, result.total_cost);
     Some(result)
 }
 

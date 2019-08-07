@@ -35,11 +35,9 @@ pub fn get_preference(graph: &Graph, driven_routes: &[DijkstraResult]) -> Option
             let result = find_path(graph, vec![source, target], alpha).unwrap();
             if calc_total_cost(route.costs, alpha).0 > result.total_cost {
                 all_explained = false;
-                println!("Not explained");
-                problem += EDGE_COST_TAGS
-                    .iter()
-                    .enumerate()
-                    .fold(LpExpression::LitVal(0.0), |acc, (index, _)| {
+                println!("Not explained, {} > {}", calc_total_cost(route.costs, alpha).0, result.total_cost);
+                problem += (0..EDGE_COST_DIMENSION)
+                    .fold(LpExpression::LitVal(0.0), |acc, index| {
                         acc + LpExpression::ConsCont(variables[index].clone()) * ((route.costs[index] - result.costs[index]) as f32)
                     }).le(0);
 
@@ -56,7 +54,7 @@ fn solve(problem: &LpProblem, solver: &GlpkSolver) -> Option<[f64; EDGE_COST_DIM
     problem.write_lp("lp_formulation").expect("Could not write LP to file");
     match solver.run(problem) {
         Ok((status, var_values)) => {
-            println!("Status: {:?}", status);
+            println!("Solver Status: {:?}", status);
             let mut alpha = [0.0; EDGE_COST_DIMENSION];
             for (name, value) in var_values.iter() {
                 for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {

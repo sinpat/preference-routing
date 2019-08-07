@@ -67,7 +67,7 @@ pub fn start_server(graph: Graph) {
         graph,
         driven_routes: Mutex::new(Vec::new()),
         current_route: Mutex::new(DijkstraResult::new()),
-        alpha: Mutex::new([1.0, 0.0, 0.0]),
+        alpha: Mutex::new([0.0, 1.0, 0.0]),
     });
     HttpServer::new(move || {
         App::new()
