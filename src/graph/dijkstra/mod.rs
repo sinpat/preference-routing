@@ -10,7 +10,7 @@ use state::Direction::{BACKWARD, FORWARD};
 
 use crate::EDGE_COST_DIMENSION;
 use crate::graph::Graph;
-use crate::helpers::{add_floats, Coordinate, Preference};
+use crate::helpers::{add_floats, Coordinate, Costs, Preference};
 
 use super::edge::{add_edge_costs, calc_total_cost};
 
@@ -20,7 +20,7 @@ pub mod state;
 pub struct DijkstraResult {
     pub path: Vec<usize>,
     pub coordinates: Vec<Coordinate>,
-    pub costs: [f64; EDGE_COST_DIMENSION],
+    pub costs: Costs,
     pub total_cost: f64,
 }
 
@@ -44,7 +44,7 @@ pub struct Dijkstra<'a> {
     node_states: Vec<NodeState>,
 
     // (node_id, cost array, total_cost)
-    best_node: (Option<usize>, [f64; EDGE_COST_DIMENSION], OrderedFloat<f64>),
+    best_node: (Option<usize>, Costs, OrderedFloat<f64>),
 }
 
 impl<'a> Dijkstra<'a> {
@@ -62,8 +62,8 @@ impl<'a> Dijkstra<'a> {
     fn prepare(&mut self, source: usize, target: usize) {
         // Candidates
         self.candidates = BinaryHeap::new();
-        self.candidates.push(State { node_id: source, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: FORWARD });
-        self.candidates.push(State { node_id: target, costs: [0.0, 0.0, 0.0], total_cost: OrderedFloat(0.0), direction: BACKWARD });
+        self.candidates.push(State { node_id: source, costs: [0.0; EDGE_COST_DIMENSION], total_cost: OrderedFloat(0.0), direction: FORWARD });
+        self.candidates.push(State { node_id: target, costs: [0.0; EDGE_COST_DIMENSION], total_cost: OrderedFloat(0.0), direction: BACKWARD });
 
         // Touched nodes
         for node_id in &self.touched_nodes {

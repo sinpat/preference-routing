@@ -2,12 +2,12 @@ use std::convert::TryInto;
 
 use ordered_float::OrderedFloat;
 
-use crate::helpers::Preference;
+use crate::helpers::{Costs, Preference};
 
 use super::EDGE_COST_DIMENSION;
 
-pub fn parse_costs(tokens: &[&str]) -> [f64; EDGE_COST_DIMENSION] {
-    let mut edge_costs: [f64; EDGE_COST_DIMENSION] = [0.0; EDGE_COST_DIMENSION];
+pub fn parse_costs(tokens: &[&str]) -> Costs {
+    let mut edge_costs: Costs = [0.0; EDGE_COST_DIMENSION];
     for (index, token) in tokens.iter().enumerate() {
         edge_costs[index] = token.parse().unwrap();
     }
@@ -19,7 +19,7 @@ pub struct Edge {
     pub id: usize,
     pub source_id: usize,
     pub target_id: usize,
-    pub edge_costs: [f64; EDGE_COST_DIMENSION],
+    pub edge_costs: Costs,
     repl_edge_1: isize,
     repl_edge_2: isize,
 }
@@ -29,7 +29,7 @@ impl Edge {
         id: usize,
         source_id: usize,
         target_id: usize,
-        edge_costs: [f64; EDGE_COST_DIMENSION],
+        edge_costs: Costs,
         repl_edge_1: isize,
         repl_edge_2: isize,
     ) -> Edge {
@@ -48,11 +48,11 @@ impl Edge {
 pub struct HalfEdge {
     pub edge_id: usize,
     pub target_id: usize,
-    pub edge_costs: [f64; EDGE_COST_DIMENSION],
+    pub edge_costs: Costs,
 }
 
 impl HalfEdge {
-    pub fn new(edge_id: usize, target_id: usize, edge_costs: [f64; EDGE_COST_DIMENSION]) -> HalfEdge {
+    pub fn new(edge_id: usize, target_id: usize, edge_costs: Costs) -> HalfEdge {
         HalfEdge {
             edge_id,
             target_id,
@@ -61,7 +61,7 @@ impl HalfEdge {
     }
 }
 
-pub fn calc_total_cost(costs: [f64; EDGE_COST_DIMENSION], alpha: Preference)
+pub fn calc_total_cost(costs: Costs, alpha: Preference)
     -> OrderedFloat<f64> {
     costs
         .iter()
@@ -70,7 +70,7 @@ pub fn calc_total_cost(costs: [f64; EDGE_COST_DIMENSION], alpha: Preference)
         .into()
 }
 
-pub fn add_edge_costs(a: [f64; EDGE_COST_DIMENSION], b: [f64; EDGE_COST_DIMENSION]) -> [f64; EDGE_COST_DIMENSION] {
+pub fn add_edge_costs(a: Costs, b: Costs) -> Costs {
     let mut result = [0.0; EDGE_COST_DIMENSION];
     a.iter()
         .zip(b.iter())
