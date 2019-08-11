@@ -118,7 +118,7 @@ impl Graph {
 
     fn unpack_edge(&self, edge_id: usize) -> Vec<usize> {
         let edge = &self.edges[edge_id];
-        if let Some((edge_1, edge_2)) = edge.get_replaced_edges() {
+        if let Some((edge_1, edge_2)) = edge.replaced_edges {
             let mut relaxed_nodes = self.unpack_edge(edge_1);
             relaxed_nodes.append(&mut self.unpack_edge(edge_2));
             return relaxed_nodes;
@@ -166,13 +166,20 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
             ));
             parsed_nodes += 1;
         } else if parsed_edges < num_of_edges {
+            let replaced_edges = if tokens[tokens.len() - 2] == "-1" {
+                None
+            } else {
+                Some((
+                    tokens[tokens.len() - 2].parse()?,
+                    tokens[tokens.len() - 1].parse()?,
+                ))
+            };
             edges.push(Edge::new(
                 parsed_edges,
                 tokens[0].parse()?,
                 tokens[1].parse()?,
                 edge::parse_costs(&tokens[2..tokens.len() - 2]),
-                tokens[tokens.len() - 2].parse()?,
-                tokens[tokens.len() - 1].parse()?,
+                replaced_edges,
             ));
             parsed_edges += 1;
         } else {

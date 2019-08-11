@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use ordered_float::OrderedFloat;
 
 use crate::helpers::{Costs, Preference};
@@ -20,8 +18,7 @@ pub struct Edge {
     pub source_id: usize,
     pub target_id: usize,
     pub edge_costs: Costs,
-    repl_edge_1: isize,
-    repl_edge_2: isize,
+    pub replaced_edges: Option<(usize, usize)>,
 }
 
 impl Edge {
@@ -30,27 +27,15 @@ impl Edge {
         source_id: usize,
         target_id: usize,
         edge_costs: Costs,
-        repl_edge_1: isize,
-        repl_edge_2: isize,
+        replaced_edges: Option<(usize, usize)>,
     ) -> Edge {
         Edge {
             id,
             source_id,
             target_id,
             edge_costs,
-            repl_edge_1,
-            repl_edge_2,
+            replaced_edges,
         }
-    }
-
-    pub fn get_replaced_edges(&self) -> Option<(usize, usize)> {
-        if self.repl_edge_1 == -1 {
-            return None;
-        }
-        Some((
-            self.repl_edge_1.try_into().unwrap(),
-            self.repl_edge_2.try_into().unwrap(),
-        ))
     }
 }
 
