@@ -8,26 +8,58 @@ use crate::graph::edge::calc_total_cost;
 use crate::graph::dijkstra::{DijkstraResult, find_path};
 use crate::graph::Graph;
 
-pub fn get_preference(graph: &Graph, driven_routes: &[DijkstraResult]) -> Option<[f64; EDGE_COST_DIMENSION]> {
-    let mut problem = LpProblem::new("Find Preference", LpObjective::Maximize);
-    let solver = GlpkSolver::new();
+pub struct PreferenceEstimator {
+    problem: LpProblem,
+    variables: Vec<LpContinuous>,
+    delta: LpContinuous,
+    solver: GlpkSolver,
+}
 
-    // Variables
-    let mut variables = Vec::new();
-    for tag in &EDGE_COST_TAGS {
-        variables.push(LpContinuous::new(tag));
+impl PreferenceEstimator {
+    pub fn new() -> Self {
+        let mut problem = LpProblem::new("Find Preference", LpObjective::Maximize);
+
+        // Variables
+        let mut variables = Vec::new();
+        for tag in &EDGE_COST_TAGS {
+            variables.push(LpContinuous::new(tag));
+        }
+        let delta = LpContinuous::new("delta");
+
+        // Objective Function
+        problem += &delta;
+
+        // Constraints
+        for var in &variables {
+            problem += var.ge(0);
+        }
+        problem += lp_sum(&variables).equal(1);
+        problem += delta.ge(0);
+
+        PreferenceEstimator {
+            problem,
+            variables,
+            delta,
+            solver: GlpkSolver::new(),
+        }
+    }
+    pub fn get_preference(
+        &mut self,
+        graph: &Graph,
+        driven_routes: &[DijkstraResult],
+        alpha_in: [f64; EDGE_COST_DIMENSION]
+    ) -> Option<[f64; EDGE_COST_DIMENSION]> {
+        self.check_feasibility(graph, driven_routes, alpha_in);
+        while let Some(alpha) = self.solve() {
+            let feasible = self.check_feasibility(graph, driven_routes, alpha);
+            if feasible {
+                return Some(alpha);
+            }
+        }
+        None
     }
 
-    // Objective Function: Maximize zeros
-    problem += &variables[1];
-
-    // Constraints
-    for var in &variables {
-        problem += var.ge(0);
-    }
-    problem += lp_sum(&variables).equal(1);
-
-    while let Some(alpha) = solve(&problem, &solver) {
+    fn check_feasibility(&mut self, graph: &Graph, driven_routes: &[DijkstraResult], alpha: [f64; EDGE_COST_DIMENSION]) -> bool {
         let mut all_explained = true;
         for route in driven_routes {
             let source = route.path[0];
@@ -36,40 +68,39 @@ pub fn get_preference(graph: &Graph, driven_routes: &[DijkstraResult]) -> Option
             if calc_total_cost(route.costs, alpha).0 > result.total_cost {
                 all_explained = false;
                 println!("Not explained, {} > {}", calc_total_cost(route.costs, alpha).0, result.total_cost);
-                problem += (0..EDGE_COST_DIMENSION)
-                    .fold(LpExpression::LitVal(0.0), |acc, index| {
-                        acc + LpExpression::ConsCont(variables[index].clone()) * ((route.costs[index] - result.costs[index]) as f32)
+                self.problem += (0..EDGE_COST_DIMENSION)
+                    .fold(LpExpression::ConsCont(self.delta.clone()), |acc, index| {
+                        acc + LpExpression::ConsCont(self.variables[index].clone()) * ((route.costs[index] - result.costs[index]) as f32)
                     }).le(0);
-
             }
         }
-        if all_explained {
-            return Some(alpha);
-        }
+        all_explained
     }
-    None
-}
 
-fn solve(problem: &LpProblem, solver: &GlpkSolver) -> Option<[f64; EDGE_COST_DIMENSION]> {
-    problem.write_lp("lp_formulation").expect("Could not write LP to file");
-    match solver.run(problem) {
-        Ok((status, var_values)) => {
-            println!("Solver Status: {:?}", status);
-            let mut alpha = [0.0; EDGE_COST_DIMENSION];
-            for (name, value) in var_values.iter() {
-                for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {
-                    if name == tag {
-                        alpha[index] = f64::from(*value);
-                        break;
+    fn solve(&self) -> Option<[f64; EDGE_COST_DIMENSION]> {
+        self.problem.write_lp("lp_formulation").expect("Could not write LP to file");
+        match self.solver.run(&self.problem) {
+            Ok((status, var_values)) => {
+                println!("Solver Status: {:?}", status);
+                let mut alpha = [0.0; EDGE_COST_DIMENSION];
+                for (name, value) in var_values.iter() {
+                    if name == "delta" {
+                        println!("delta: {}", value);
+                    }
+                    for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {
+                        if name == tag {
+                            alpha[index] = f64::from(*value);
+                            break;
+                        }
                     }
                 }
+                println!("Alpha: {:?}", alpha);
+                Some(alpha)
             }
-            println!("Alpha: {:?}", alpha);
-            Some(alpha)
-        }
-        Err(msg) => {
-            println!("LpError: {}", msg);
-            None
+            Err(msg) => {
+                println!("LpError: {}", msg);
+                None
+            }
         }
     }
 }

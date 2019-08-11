@@ -8,7 +8,7 @@ use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 use crate::graph::dijkstra::DijkstraResult;
 use crate::graph::Graph;
 use crate::helpers::Coordinate;
-use crate::lp::get_preference;
+use crate::lp::PreferenceEstimator;
 
 type FspRequest = Vec<Coordinate>;
 
@@ -49,12 +49,14 @@ fn calc_preference(state: web::Data<AppState>) -> HttpResponse {
     let graph = &state.graph;
     let mut current_route = state.current_route.lock().unwrap();
     let mut user_routes = state.driven_routes.lock().unwrap();
-
+    let mut alpha = state.alpha.lock().unwrap();
     user_routes.push(current_route.clone());
     *current_route = DijkstraResult::new();
-    match get_preference(graph, &*user_routes) {
+
+    let mut pref_estimator = PreferenceEstimator::new();
+    match pref_estimator.get_preference(graph, &*user_routes, *alpha) {
         Some(new_pref) => {
-            *state.alpha.lock().unwrap() = new_pref;
+            *alpha = new_pref;
             HttpResponse::Ok().json(new_pref)
         },
         None => HttpResponse::Ok().finish()
