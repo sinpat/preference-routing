@@ -2,6 +2,8 @@ use std::convert::TryInto;
 
 use ordered_float::OrderedFloat;
 
+use crate::helpers::Preference;
+
 use super::EDGE_COST_DIMENSION;
 
 pub fn parse_costs(tokens: &[&str]) -> [f64; EDGE_COST_DIMENSION] {
@@ -59,7 +61,7 @@ impl HalfEdge {
     }
 }
 
-pub fn calc_total_cost(costs: [f64; EDGE_COST_DIMENSION], alpha: [f64; EDGE_COST_DIMENSION])
+pub fn calc_total_cost(costs: [f64; EDGE_COST_DIMENSION], alpha: Preference)
     -> OrderedFloat<f64> {
     costs
         .iter()

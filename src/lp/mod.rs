@@ -1,12 +1,13 @@
 use lp_modeler::operations::LpOperations;
-use lp_modeler::problem::{LpObjective, LpProblem, LpFileFormat};
+use lp_modeler::problem::{LpFileFormat, LpObjective, LpProblem};
 use lp_modeler::solvers::{GlpkSolver, SolverTrait};
-use lp_modeler::variables::{lp_sum, LpExpression, LpContinuous};
+use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
-use crate::graph::edge::calc_total_cost;
 use crate::graph::dijkstra::{DijkstraResult, find_path};
+use crate::graph::edge::calc_total_cost;
 use crate::graph::Graph;
+use crate::helpers::Preference;
 
 pub struct PreferenceEstimator {
     problem: LpProblem,
@@ -47,8 +48,8 @@ impl PreferenceEstimator {
         &mut self,
         graph: &Graph,
         driven_routes: &[DijkstraResult],
-        alpha_in: [f64; EDGE_COST_DIMENSION]
-    ) -> Option<[f64; EDGE_COST_DIMENSION]> {
+        alpha_in: Preference
+    ) -> Option<Preference> {
         self.check_feasibility(graph, driven_routes, alpha_in);
         while let Some(alpha) = self.solve() {
             let feasible = self.check_feasibility(graph, driven_routes, alpha);
@@ -59,7 +60,7 @@ impl PreferenceEstimator {
         None
     }
 
-    fn check_feasibility(&mut self, graph: &Graph, driven_routes: &[DijkstraResult], alpha: [f64; EDGE_COST_DIMENSION]) -> bool {
+    fn check_feasibility(&mut self, graph: &Graph, driven_routes: &[DijkstraResult], alpha: Preference) -> bool {
         let mut all_explained = true;
         for route in driven_routes {
             let source = route.path[0];
@@ -77,7 +78,7 @@ impl PreferenceEstimator {
         all_explained
     }
 
-    fn solve(&self) -> Option<[f64; EDGE_COST_DIMENSION]> {
+    fn solve(&self) -> Option<Preference> {
         self.problem.write_lp("lp_formulation").expect("Could not write LP to file");
         match self.solver.run(&self.problem) {
             Ok((status, var_values)) => {

@@ -1,9 +1,13 @@
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
+use crate::EDGE_COST_DIMENSION;
+
 pub fn add_floats(a: OrderedFloat<f64>, b: OrderedFloat<f64>) -> OrderedFloat<f64> {
     OrderedFloat(a.0 + b.0)
 }
+
+pub type Preference = [f64; EDGE_COST_DIMENSION];
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Coordinate {

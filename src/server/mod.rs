@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 use crate::graph::dijkstra::DijkstraResult;
 use crate::graph::Graph;
-use crate::helpers::Coordinate;
+use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
 
 type FspRequest = Vec<Coordinate>;
@@ -15,7 +15,7 @@ type FspRequest = Vec<Coordinate>;
 #[derive(Serialize, Debug)]
 struct FspResponse<'a> {
     path: DijkstraResult,
-    alpha: [f64; EDGE_COST_DIMENSION],
+    alpha: Preference,
     cost_tags: [&'a str; EDGE_COST_DIMENSION],
 }
 
@@ -93,7 +93,7 @@ struct AppState {
     graph: Graph,
     driven_routes: Mutex<Vec<DijkstraResult>>,
     current_route: Mutex<DijkstraResult>,
-    alpha: Mutex<[f64; EDGE_COST_DIMENSION]>,
+    alpha: Mutex<Preference>,
 }
 
 #[cfg(test)]

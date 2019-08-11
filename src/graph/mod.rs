@@ -9,7 +9,7 @@ use edge::{Edge, HalfEdge};
 use node::Node;
 
 use crate::EDGE_COST_DIMENSION;
-use crate::helpers::Coordinate;
+use crate::helpers::{Coordinate, Preference};
 
 pub mod edge;
 mod node;
@@ -69,7 +69,7 @@ impl Graph {
         Graph { nodes, edges, offsets_in, offsets_out, half_edges_in, half_edges_out }
     }
 
-    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: [f64; EDGE_COST_DIMENSION])
+    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference)
         -> Option<DijkstraResult> {
         let include_ids = include
             .iter()

@@ -10,7 +10,7 @@ use state::Direction::{BACKWARD, FORWARD};
 
 use crate::EDGE_COST_DIMENSION;
 use crate::graph::Graph;
-use crate::helpers::{add_floats, Coordinate};
+use crate::helpers::{add_floats, Coordinate, Preference};
 
 use super::edge::{add_edge_costs, calc_total_cost};
 
@@ -81,7 +81,7 @@ impl<'a> Dijkstra<'a> {
         self.best_node = (None, [0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX));
     }
 
-    fn run(&mut self, source: usize, target: usize, alpha: [f64; EDGE_COST_DIMENSION])
+    fn run(&mut self, source: usize, target: usize, alpha: Preference)
         -> Option<DijkstraResult> {
         self.prepare(source, target);
 
@@ -115,7 +115,7 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    fn process_state(&mut self, candidate: State, alpha: [f64; EDGE_COST_DIMENSION]) {
+    fn process_state(&mut self, candidate: State, alpha: Preference) {
         let State { node_id, costs, total_cost, direction } = candidate;
         let mut node_state = &self.node_states[node_id];
         if direction == FORWARD {
@@ -189,7 +189,7 @@ impl<'a> Dijkstra<'a> {
     }
 }
 
-pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: [f64; EDGE_COST_DIMENSION])
+pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference)
     -> Option<DijkstraResult> {
     println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
