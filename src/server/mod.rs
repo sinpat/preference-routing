@@ -63,6 +63,13 @@ fn calc_preference(state: web::Data<AppState>) -> HttpResponse {
     }
 }
 
+fn reset_data(state: web::Data<AppState>) -> HttpResponse {
+    *state.driven_routes.lock().unwrap() = Vec::new();
+    *state.current_route.lock().unwrap() = DijkstraResult::new();
+    *state.alpha.lock().unwrap() = [0.0, 1.0, 0.0];
+    HttpResponse::Ok().finish()
+}
+
 pub fn start_server(graph: Graph) {
     println!("Starting server");
     let state = web::Data::new(AppState {
@@ -79,7 +86,8 @@ pub fn start_server(graph: Graph) {
                 web::scope("/routing")
                     .route("/closest", web::get().to(find_closest))
                     .route("/fsp", web::post().to(fsp))
-                    .route("/preference", web::post().to(calc_preference)),
+                    .route("/preference", web::post().to(calc_preference))
+                    .route("/reset", web::post().to(reset_data)),
             )
     })
     .bind("localhost:8000")
