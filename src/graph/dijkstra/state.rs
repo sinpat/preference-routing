@@ -21,6 +21,17 @@ pub struct State {
     pub direction: Direction,
 }
 
+impl State {
+    pub fn new(node_id: usize, direction: Direction) -> Self {
+        State {
+            node_id,
+            costs: [0.0; EDGE_COST_DIMENSION],
+            total_cost: OrderedFloat(0.0),
+            direction,
+        }
+    }
+}
+
 impl std::cmp::Eq for State {}
 
 impl std::cmp::Ord for State {

@@ -38,6 +38,7 @@ impl DijkstraResult {
 pub struct Dijkstra<'a> {
     graph: &'a Graph,
     candidates: BinaryHeap<State>,
+    // TODO: Check HashSet operation complexities
     touched_nodes: HashSet<usize>,
 
     // Contains all the information about the nodes
@@ -66,18 +67,8 @@ impl<'a> Dijkstra<'a> {
     fn prepare(&mut self, source: usize, target: usize) {
         // Candidates
         self.candidates = BinaryHeap::new();
-        self.candidates.push(State {
-            node_id: source,
-            costs: [0.0; EDGE_COST_DIMENSION],
-            total_cost: OrderedFloat(0.0),
-            direction: FORWARD,
-        });
-        self.candidates.push(State {
-            node_id: target,
-            costs: [0.0; EDGE_COST_DIMENSION],
-            total_cost: OrderedFloat(0.0),
-            direction: BACKWARD,
-        });
+        self.candidates.push(State::new(source, FORWARD));
+        self.candidates.push(State::new(target, BACKWARD));
 
         // Touched nodes
         for node_id in &self.touched_nodes {
