@@ -8,12 +8,12 @@ use dijkstra::DijkstraResult;
 use edge::{Edge, HalfEdge};
 use node::Node;
 
-use crate::EDGE_COST_DIMENSION;
 use crate::helpers::{Coordinate, Preference};
+use crate::EDGE_COST_DIMENSION;
 
+pub mod dijkstra;
 pub mod edge;
 mod node;
-pub mod dijkstra;
 
 #[derive(Debug)]
 pub struct Graph {
@@ -40,8 +40,7 @@ impl Graph {
         edges.sort_by(|a, b| a.source_id.cmp(&b.source_id));
         edges
             .iter()
-            .filter(|edge|
-                nodes[edge.target_id].ch_level >= nodes[edge.source_id].ch_level)
+            .filter(|edge| nodes[edge.target_id].ch_level >= nodes[edge.source_id].ch_level)
             .for_each(|edge| {
                 offsets_out[edge.source_id + 1] += 1;
                 half_edges_out.push(HalfEdge::new(edge.id, edge.target_id, edge.edge_costs));
@@ -51,8 +50,7 @@ impl Graph {
         edges.sort_by(|a, b| a.target_id.cmp(&b.target_id));
         edges
             .iter()
-            .filter(|edge|
-                nodes[edge.source_id].ch_level >= nodes[edge.target_id].ch_level)
+            .filter(|edge| nodes[edge.source_id].ch_level >= nodes[edge.target_id].ch_level)
             .for_each(|edge| {
                 offsets_in[edge.target_id + 1] += 1;
                 half_edges_in.push(HalfEdge::new(edge.id, edge.source_id, edge.edge_costs));
@@ -66,11 +64,21 @@ impl Graph {
 
         // sort edges by id
         edges.sort_by(|a, b| a.id.cmp(&b.id));
-        Graph { nodes, edges, offsets_in, offsets_out, half_edges_in, half_edges_out }
+        Graph {
+            nodes,
+            edges,
+            offsets_in,
+            offsets_out,
+            half_edges_in,
+            half_edges_out,
+        }
     }
 
-    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference)
-        -> Option<DijkstraResult> {
+    pub fn find_shortest_path(
+        &self,
+        include: Vec<Coordinate>,
+        alpha: Preference,
+    ) -> Option<DijkstraResult> {
         let include_ids = include
             .iter()
             .map(|x| self.find_closest_node(x).1)
@@ -132,8 +140,14 @@ pub fn parse_graph_file(file_path: &str) -> Result<Graph, Box<dyn std::error::Er
     }
     let cost_dim: usize = lines.next().expect("No edge cost dim given")?.parse()?;
     assert_eq!(EDGE_COST_DIMENSION, cost_dim);
-    let num_of_nodes = lines.next().expect("Number of nodes not present in file")?.parse()?;
-    let num_of_edges = lines.next().expect("Number of edges not present in file")?.parse()?;
+    let num_of_nodes = lines
+        .next()
+        .expect("Number of nodes not present in file")?
+        .parse()?;
+    let num_of_edges = lines
+        .next()
+        .expect("Number of edges not present in file")?
+        .parse()?;
 
     let mut parsed_nodes: usize = 0;
     let mut parsed_edges: usize = 0;

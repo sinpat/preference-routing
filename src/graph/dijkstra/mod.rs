@@ -5,12 +5,12 @@ use std::time::Instant;
 use ordered_float::OrderedFloat;
 use serde::Serialize;
 
-use state::{NodeState, State};
 use state::Direction::{BACKWARD, FORWARD};
+use state::{NodeState, State};
 
-use crate::EDGE_COST_DIMENSION;
 use crate::graph::Graph;
 use crate::helpers::{add_floats, Coordinate, Costs, Preference};
+use crate::EDGE_COST_DIMENSION;
 
 use super::edge::{add_edge_costs, calc_total_cost};
 
@@ -30,7 +30,7 @@ impl DijkstraResult {
             path: Vec::new(),
             coordinates: Vec::new(),
             costs: [0.0; EDGE_COST_DIMENSION],
-            total_cost: 0.0
+            total_cost: 0.0,
         }
     }
 }
@@ -55,15 +55,29 @@ impl<'a> Dijkstra<'a> {
             candidates: BinaryHeap::new(),
             touched_nodes: HashSet::new(),
             node_states: vec![NodeState::new(); num_of_nodes],
-            best_node: (None, [0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
+            best_node: (
+                None,
+                [0.0; EDGE_COST_DIMENSION],
+                OrderedFloat(std::f64::MAX),
+            ),
         }
     }
 
     fn prepare(&mut self, source: usize, target: usize) {
         // Candidates
         self.candidates = BinaryHeap::new();
-        self.candidates.push(State { node_id: source, costs: [0.0; EDGE_COST_DIMENSION], total_cost: OrderedFloat(0.0), direction: FORWARD });
-        self.candidates.push(State { node_id: target, costs: [0.0; EDGE_COST_DIMENSION], total_cost: OrderedFloat(0.0), direction: BACKWARD });
+        self.candidates.push(State {
+            node_id: source,
+            costs: [0.0; EDGE_COST_DIMENSION],
+            total_cost: OrderedFloat(0.0),
+            direction: FORWARD,
+        });
+        self.candidates.push(State {
+            node_id: target,
+            costs: [0.0; EDGE_COST_DIMENSION],
+            total_cost: OrderedFloat(0.0),
+            direction: BACKWARD,
+        });
 
         // Touched nodes
         for node_id in &self.touched_nodes {
@@ -78,11 +92,14 @@ impl<'a> Dijkstra<'a> {
         self.touched_nodes.insert(target);
 
         // Best node
-        self.best_node = (None, [0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX));
+        self.best_node = (
+            None,
+            [0.0; EDGE_COST_DIMENSION],
+            OrderedFloat(std::f64::MAX),
+        );
     }
 
-    fn run(&mut self, source: usize, target: usize, alpha: Preference)
-        -> Option<DijkstraResult> {
+    fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<DijkstraResult> {
         self.prepare(source, target);
 
         // TODO: Implement termination condition?
@@ -93,10 +110,12 @@ impl<'a> Dijkstra<'a> {
         match self.best_node {
             (None, _, _) => None,
             (Some(node_id), costs, total_cost) => {
-                println!("Found node {:?} with cost {:?} in {:?}ms",
-                         node_id,
-                         total_cost,
-                         now.elapsed().as_millis());
+                println!(
+                    "Found node {:?} with cost {:?} in {:?}ms",
+                    node_id,
+                    total_cost,
+                    now.elapsed().as_millis()
+                );
                 let path = self.construct_path(node_id, source);
                 let coordinates = path
                     .iter()
@@ -116,7 +135,12 @@ impl<'a> Dijkstra<'a> {
     }
 
     fn process_state(&mut self, candidate: State, alpha: Preference) {
-        let State { node_id, costs, total_cost, direction } = candidate;
+        let State {
+            node_id,
+            costs,
+            total_cost,
+            direction,
+        } = candidate;
         let mut node_state = &self.node_states[node_id];
         if direction == FORWARD {
             if total_cost > node_state.to_dist.1 {
@@ -131,7 +155,10 @@ impl<'a> Dijkstra<'a> {
                 let next = State {
                     node_id: half_edge.target_id,
                     costs: add_edge_costs(costs, half_edge.edge_costs),
-                    total_cost: add_floats(total_cost, calc_total_cost(half_edge.edge_costs, alpha)),
+                    total_cost: add_floats(
+                        total_cost,
+                        calc_total_cost(half_edge.edge_costs, alpha),
+                    ),
                     direction,
                 };
                 let next_node_state = &mut self.node_states[next.node_id];
@@ -141,7 +168,7 @@ impl<'a> Dijkstra<'a> {
                     self.touched_nodes.insert(next.node_id);
                     self.candidates.push(next);
                 }
-            };
+            }
         }
         node_state = &self.node_states[node_id];
         if direction == BACKWARD {
@@ -157,7 +184,10 @@ impl<'a> Dijkstra<'a> {
                 let next = State {
                     node_id: half_edge.target_id,
                     costs: add_edge_costs(costs, half_edge.edge_costs),
-                    total_cost: add_floats(total_cost, calc_total_cost(half_edge.edge_costs, alpha)),
+                    total_cost: add_floats(
+                        total_cost,
+                        calc_total_cost(half_edge.edge_costs, alpha),
+                    ),
                     direction,
                 };
                 let next_node_state = &mut self.node_states[next.node_id];
@@ -189,11 +219,11 @@ impl<'a> Dijkstra<'a> {
     }
 }
 
-pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference)
-    -> Option<DijkstraResult> {
+pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Option<DijkstraResult> {
     println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
-    let result = include.windows(2)
+    let result = include
+        .windows(2)
         .fold(DijkstraResult::new(), |mut acc, win| {
             if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
                 acc.path.append(&mut result.path);
@@ -203,7 +233,10 @@ pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference)
             }
             acc
         });
-    println!("=== Found path with costs: {:?} and total cost: {} ===", result.costs, result.total_cost);
+    println!(
+        "=== Found path with costs: {:?} and total cost: {} ===",
+        result.costs, result.total_cost
+    );
     Some(result)
 }
 
@@ -211,7 +244,7 @@ pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference)
 mod tests {
     use ordered_float::OrderedFloat;
 
-    use crate::graph::{Graph, parse_graph_file};
+    use crate::graph::{parse_graph_file, Graph};
 
     use super::*;
 

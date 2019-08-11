@@ -23,7 +23,6 @@ impl Coordinate {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

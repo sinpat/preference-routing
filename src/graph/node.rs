@@ -11,7 +11,12 @@ pub struct Node {
 impl Node {
     pub fn new(id: usize, lat: f64, lng: f64, height: f64, ch_level: usize) -> Node {
         let location = Coordinate { lat, lng };
-        Node { id, height, ch_level, location }
+        Node {
+            id,
+            height,
+            ch_level,
+            location,
+        }
     }
 }
 

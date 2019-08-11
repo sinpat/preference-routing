@@ -1,14 +1,14 @@
 use std::sync::Mutex;
 
 use actix_cors::Cors;
-use actix_web::{App, HttpResponse, HttpServer, web};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use serde::Serialize;
 
-use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 use crate::graph::dijkstra::DijkstraResult;
 use crate::graph::Graph;
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
+use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 
 type FspRequest = Vec<Coordinate>;
 
@@ -58,8 +58,8 @@ fn calc_preference(state: web::Data<AppState>) -> HttpResponse {
         Some(new_pref) => {
             *alpha = new_pref;
             HttpResponse::Ok().json(new_pref)
-        },
-        None => HttpResponse::Ok().finish()
+        }
+        None => HttpResponse::Ok().finish(),
     }
 }
 
@@ -73,20 +73,19 @@ pub fn start_server(graph: Graph) {
     });
     HttpServer::new(move || {
         App::new()
-            .wrap(Cors::new()
-                .allowed_origin("http://localhost:8080"))
+            .wrap(Cors::new().allowed_origin("http://localhost:8080"))
             .register_data(state.clone())
             .service(
                 web::scope("/routing")
                     .route("/closest", web::get().to(find_closest))
                     .route("/fsp", web::post().to(fsp))
-                    .route("/preference", web::post().to(calc_preference))
+                    .route("/preference", web::post().to(calc_preference)),
             )
     })
-        .bind("localhost:8000")
-        .expect("Can not bind to port 8000")
-        .run()
-        .expect("Could not start sever");
+    .bind("localhost:8000")
+    .expect("Can not bind to port 8000")
+    .run()
+    .expect("Could not start sever");
 }
 
 struct AppState {

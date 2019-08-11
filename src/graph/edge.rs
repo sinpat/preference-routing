@@ -33,14 +33,24 @@ impl Edge {
         repl_edge_1: isize,
         repl_edge_2: isize,
     ) -> Edge {
-        Edge { id, source_id, target_id, edge_costs, repl_edge_1, repl_edge_2 }
+        Edge {
+            id,
+            source_id,
+            target_id,
+            edge_costs,
+            repl_edge_1,
+            repl_edge_2,
+        }
     }
 
     pub fn get_replaced_edges(&self) -> Option<(usize, usize)> {
         if self.repl_edge_1 == -1 {
             return None;
         }
-        Some((self.repl_edge_1.try_into().unwrap(), self.repl_edge_2.try_into().unwrap()))
+        Some((
+            self.repl_edge_1.try_into().unwrap(),
+            self.repl_edge_2.try_into().unwrap(),
+        ))
     }
 }
 
@@ -61,8 +71,7 @@ impl HalfEdge {
     }
 }
 
-pub fn calc_total_cost(costs: Costs, alpha: Preference)
-    -> OrderedFloat<f64> {
+pub fn calc_total_cost(costs: Costs, alpha: Preference) -> OrderedFloat<f64> {
     costs
         .iter()
         .zip(alpha.iter())

@@ -2,12 +2,14 @@ use std::cmp::Ordering;
 
 use ordered_float::OrderedFloat;
 
-use crate::EDGE_COST_DIMENSION;
 use crate::helpers::Costs;
+use crate::EDGE_COST_DIMENSION;
 
 #[derive(PartialEq, Copy, Clone)]
-pub enum Direction { FORWARD, BACKWARD }
-
+pub enum Direction {
+    FORWARD,
+    BACKWARD,
+}
 
 #[derive(PartialEq)]
 pub struct State {

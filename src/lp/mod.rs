@@ -3,11 +3,11 @@ use lp_modeler::problem::{LpFileFormat, LpObjective, LpProblem};
 use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
-use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
-use crate::graph::dijkstra::{DijkstraResult, find_path};
+use crate::graph::dijkstra::{find_path, DijkstraResult};
 use crate::graph::edge::calc_total_cost;
 use crate::graph::Graph;
 use crate::helpers::Preference;
+use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 
 pub struct PreferenceEstimator {
     problem: LpProblem,
@@ -48,7 +48,7 @@ impl PreferenceEstimator {
         &mut self,
         graph: &Graph,
         driven_routes: &[DijkstraResult],
-        alpha_in: Preference
+        alpha_in: Preference,
     ) -> Option<Preference> {
         self.check_feasibility(graph, driven_routes, alpha_in);
         while let Some(alpha) = self.solve() {
@@ -60,7 +60,12 @@ impl PreferenceEstimator {
         None
     }
 
-    fn check_feasibility(&mut self, graph: &Graph, driven_routes: &[DijkstraResult], alpha: Preference) -> bool {
+    fn check_feasibility(
+        &mut self,
+        graph: &Graph,
+        driven_routes: &[DijkstraResult],
+        alpha: Preference,
+    ) -> bool {
         let mut all_explained = true;
         for route in driven_routes {
             let source = route.path[0];
@@ -68,18 +73,26 @@ impl PreferenceEstimator {
             let result = find_path(graph, vec![source, target], alpha).unwrap();
             if calc_total_cost(route.costs, alpha).0 > result.total_cost {
                 all_explained = false;
-                println!("Not explained, {} > {}", calc_total_cost(route.costs, alpha).0, result.total_cost);
+                println!(
+                    "Not explained, {} > {}",
+                    calc_total_cost(route.costs, alpha).0,
+                    result.total_cost
+                );
                 self.problem += (0..EDGE_COST_DIMENSION)
                     .fold(LpExpression::ConsCont(self.delta.clone()), |acc, index| {
-                        acc + LpExpression::ConsCont(self.variables[index].clone()) * ((route.costs[index] - result.costs[index]) as f32)
-                    }).le(0);
+                        acc + LpExpression::ConsCont(self.variables[index].clone())
+                            * ((route.costs[index] - result.costs[index]) as f32)
+                    })
+                    .le(0);
             }
         }
         all_explained
     }
 
     fn solve(&self) -> Option<Preference> {
-        self.problem.write_lp("lp_formulation").expect("Could not write LP to file");
+        self.problem
+            .write_lp("lp_formulation")
+            .expect("Could not write LP to file");
         match self.solver.run(&self.problem) {
             Ok((status, var_values)) => {
                 println!("Solver Status: {:?}", status);
