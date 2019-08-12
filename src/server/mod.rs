@@ -45,6 +45,10 @@ fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse 
     }
 }
 
+fn get_preference(state: web::Data<AppState>) -> HttpResponse {
+    HttpResponse::Ok().json(&state.alpha)
+}
+
 fn calc_preference(state: web::Data<AppState>) -> HttpResponse {
     let graph = &state.graph;
     let mut current_route = state.current_route.lock().unwrap();
@@ -86,6 +90,7 @@ pub fn start_server(graph: Graph) {
                 web::scope("/routing")
                     .route("/closest", web::get().to(find_closest))
                     .route("/fsp", web::post().to(fsp))
+                    .route("/preference", web::get().to(get_preference))
                     .route("/preference", web::post().to(calc_preference))
                     .route("/reset", web::post().to(reset_data)),
             )
