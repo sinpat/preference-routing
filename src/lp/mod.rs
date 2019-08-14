@@ -12,7 +12,7 @@ use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 pub struct PreferenceEstimator {
     problem: LpProblem,
     variables: Vec<LpContinuous>,
-    delta: LpContinuous,
+    deltas: Vec<LpContinuous>,
     solver: GlpkSolver,
 }
 
@@ -25,22 +25,18 @@ impl PreferenceEstimator {
         for tag in &EDGE_COST_TAGS {
             variables.push(LpContinuous::new(tag));
         }
-        let delta = LpContinuous::new("delta");
-
-        // Objective Function
-        problem += &delta;
+        let deltas = Vec::new();
 
         // Constraints
         for var in &variables {
             problem += var.ge(0);
         }
         problem += lp_sum(&variables).equal(1);
-        problem += delta.ge(0);
 
         PreferenceEstimator {
             problem,
             variables,
-            delta,
+            deltas,
             solver: GlpkSolver::new(),
         }
     }
@@ -78,8 +74,12 @@ impl PreferenceEstimator {
                     calc_total_cost(route.costs, alpha).0,
                     result.total_cost
                 );
+                let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));
+                self.problem += new_delta.ge(0);
+                self.problem += new_delta.clone();
+                self.deltas.push(new_delta.clone());
                 self.problem += (0..EDGE_COST_DIMENSION)
-                    .fold(LpExpression::ConsCont(self.delta.clone()), |acc, index| {
+                    .fold(LpExpression::ConsCont(new_delta), |acc, index| {
                         acc + LpExpression::ConsCont(self.variables[index].clone())
                             * ((route.costs[index] - result.costs[index]) as f32)
                     })
@@ -97,18 +97,27 @@ impl PreferenceEstimator {
             Ok((status, var_values)) => {
                 println!("Solver Status: {:?}", status);
                 let mut alpha = [0.0; EDGE_COST_DIMENSION];
+                let mut all_zero = true;
                 for (name, value) in var_values.iter() {
-                    if name == "delta" {
-                        println!("delta: {}", value);
-                    }
-                    for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {
-                        if name == tag {
-                            alpha[index] = f64::from(*value);
-                            break;
+                    if name.contains("delta") {
+                        println!("{}: {}", name, value);
+                    } else {
+                        if *value != 0.0 {
+                            all_zero = false;
+                        }
+                        // The order of variables in the HashMap varies
+                        for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {
+                            if name == tag {
+                                alpha[index] = f64::from(*value);
+                                break;
+                            }
                         }
                     }
                 }
                 println!("Alpha: {:?}", alpha);
+                if all_zero {
+                    return None;
+                }
                 Some(alpha)
             }
             Err(msg) => {

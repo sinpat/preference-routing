@@ -63,7 +63,7 @@ fn calc_preference(state: web::Data<AppState>) -> HttpResponse {
             *alpha = new_pref;
             HttpResponse::Ok().json(new_pref)
         }
-        None => HttpResponse::Ok().finish(),
+        None => HttpResponse::Ok().json([0.0; 0]),
     }
 }
 
