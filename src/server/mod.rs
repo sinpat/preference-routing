@@ -8,15 +8,13 @@ use crate::graph::dijkstra::DijkstraResult;
 use crate::graph::Graph;
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
-use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 
 type FspRequest = Vec<Coordinate>;
 
 #[derive(Serialize, Debug)]
-struct FspResponse<'a> {
+struct FspResponse {
     path: DijkstraResult,
     alpha: Preference,
-    cost_tags: [&'a str; EDGE_COST_DIMENSION],
 }
 
 fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
@@ -36,11 +34,7 @@ fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse 
         None => HttpResponse::Ok().finish(),
         Some(path) => {
             *state.current_route.lock().unwrap() = path.clone();
-            HttpResponse::Ok().json(FspResponse {
-                path,
-                alpha,
-                cost_tags: EDGE_COST_TAGS,
-            })
+            HttpResponse::Ok().json(FspResponse { path, alpha })
         }
     }
 }
