@@ -9,6 +9,7 @@ use crate::graph::Graph;
 use crate::helpers::Preference;
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 
+// TODO: Remove this struct?
 pub struct PreferenceEstimator {
     problem: LpProblem,
     variables: Vec<LpContinuous>,

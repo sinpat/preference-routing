@@ -16,23 +16,14 @@ use super::edge::{add_edge_costs, calc_total_cost};
 
 pub mod state;
 
+// TODO: Rename this struct
 #[derive(Debug, Serialize, Clone)]
 pub struct DijkstraResult {
     pub path: Vec<usize>,
     pub coordinates: Vec<Coordinate>,
     pub costs: Costs,
+    pub alpha: Preference,
     pub total_cost: f64,
-}
-
-impl DijkstraResult {
-    pub fn new() -> Self {
-        DijkstraResult {
-            path: Vec::new(),
-            coordinates: Vec::new(),
-            costs: [0.0; EDGE_COST_DIMENSION],
-            total_cost: 0.0,
-        }
-    }
 }
 
 pub struct Dijkstra<'a> {
@@ -119,6 +110,7 @@ impl<'a> Dijkstra<'a> {
                     path,
                     coordinates,
                     costs,
+                    alpha,
                     total_cost: total_cost.into_inner(),
                 })
             }
@@ -213,22 +205,29 @@ impl<'a> Dijkstra<'a> {
 pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Option<DijkstraResult> {
     println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
-    let result = include
-        .windows(2)
-        .fold(DijkstraResult::new(), |mut acc, win| {
-            if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
-                acc.path.append(&mut result.path);
-                acc.coordinates.append(&mut result.coordinates);
-                acc.costs = add_edge_costs(acc.costs, result.costs);
-                acc.total_cost += result.total_cost;
-            }
-            acc
-        });
+    let mut path = Vec::new();
+    let mut coordinates = Vec::new();
+    let mut costs = [0.0; EDGE_COST_DIMENSION];
+    let mut total_cost = 0.0;
+    include.windows(2).for_each(|win| {
+        if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
+            path.append(&mut result.path);
+            coordinates.append(&mut result.coordinates);
+            costs = add_edge_costs(costs, result.costs);
+            total_cost += result.total_cost;
+        }
+    });
     println!(
         "=== Found path with costs: {:?} and total cost: {} ===",
-        result.costs, result.total_cost
+        costs, total_cost
     );
-    Some(result)
+    Some(DijkstraResult {
+        path,
+        coordinates,
+        costs,
+        alpha,
+        total_cost,
+    })
 }
 
 #[cfg(test)]
