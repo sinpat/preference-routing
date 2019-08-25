@@ -7,8 +7,11 @@ use crate::graph::dijkstra::Path;
 use crate::graph::Graph;
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
+use crate::EDGE_COST_DIMENSION;
 
 type FspRequest = Vec<Coordinate>;
+
+const INITIAL_PREF: [f64; EDGE_COST_DIMENSION] = [0.0, 1.0, 0.0];
 
 fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
     let graph = &state.graph;
@@ -68,7 +71,7 @@ fn find_preference(state: web::Data<AppState>) -> HttpResponse {
 fn reset_data(state: web::Data<AppState>) -> HttpResponse {
     *state.driven_routes.lock().unwrap() = Vec::new();
     *state.current_route.lock().unwrap() = None;
-    *state.alpha.lock().unwrap() = [0.0, 1.0, 0.0];
+    *state.alpha.lock().unwrap() = INITIAL_PREF;
     HttpResponse::Ok().finish()
 }
 
@@ -78,7 +81,7 @@ pub fn start_server(graph: Graph) {
         graph,
         driven_routes: Mutex::new(Vec::new()),
         current_route: Mutex::new(None),
-        alpha: Mutex::new([0.0, 1.0, 0.0]),
+        alpha: Mutex::new(INITIAL_PREF),
     });
     HttpServer::new(move || {
         App::new()

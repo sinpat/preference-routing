@@ -47,7 +47,10 @@ impl PreferenceEstimator {
         driven_routes: &[Path],
         alpha_in: Preference,
     ) -> Option<Preference> {
-        self.check_feasibility(graph, driven_routes, alpha_in);
+        let current_feasible = self.check_feasibility(graph, driven_routes, alpha_in);
+        if current_feasible {
+            return Some(alpha_in);
+        }
         while let Some(alpha) = self.solve() {
             let feasible = self.check_feasibility(graph, driven_routes, alpha);
             if feasible {
@@ -68,8 +71,10 @@ impl PreferenceEstimator {
             let source = route.nodes[0];
             let target = route.nodes[route.nodes.len() - 1];
             let result = find_path(graph, vec![source, target], alpha).unwrap();
-            // TODO: Check, if the waypoints of the two paths are the same, only checking the total cost is too imprecise
-            if calc_total_cost(route.costs, alpha).0 > result.total_cost {
+            if route.nodes == result.nodes {
+                // TODO: Currently this does not work, because there are some duplicates in the paths
+                println!("Paths are equal, proceed with next route");
+            } else if calc_total_cost(route.costs, alpha).0 > result.total_cost {
                 all_explained = false;
                 println!(
                     "Not explained, {} > {}",

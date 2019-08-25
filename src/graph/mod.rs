@@ -74,11 +74,7 @@ impl Graph {
         }
     }
 
-    pub fn find_shortest_path(
-        &self,
-        include: Vec<Coordinate>,
-        alpha: Preference,
-    ) -> Option<Path> {
+    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Option<Path> {
         let include_ids = include
             .iter()
             .map(|x| self.find_closest_node(x).1)

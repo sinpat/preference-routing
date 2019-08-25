@@ -100,10 +100,7 @@ impl<'a> Dijkstra<'a> {
                 let path = self.construct_path(node_id, source);
                 let coordinates = path
                     .iter()
-                    .map(|id| Coordinate {
-                        lat: self.graph.nodes[*id].location.lat,
-                        lng: self.graph.nodes[*id].location.lng,
-                    })
+                    .map(|id| self.graph.nodes[*id].location.clone())
                     .collect();
                 Some(Path {
                     nodes: path,
@@ -183,21 +180,22 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
+    // TODO: Revisit this function
     fn construct_path(&self, node_id: usize, source: usize) -> Vec<usize> {
-        let mut path = Vec::new();
+        let mut edges = Vec::new();
         let node_state = &self.node_states[node_id];
         let mut node_and_edge = node_state.previous;
         while let Some((current_node_id, edge_id)) = node_and_edge {
             node_and_edge = self.node_states[current_node_id].previous;
-            path.push(edge_id);
+            edges.push(edge_id);
         }
-        path.reverse();
+        edges.reverse();
         node_and_edge = node_state.successive;
         while let Some((current_node_id, edge_id)) = node_and_edge {
             node_and_edge = self.node_states[current_node_id].successive;
-            path.push(edge_id);
+            edges.push(edge_id);
         }
-        self.graph.unwrap_edges(path, source)
+        self.graph.unwrap_edges(edges, source)
     }
 }
 
