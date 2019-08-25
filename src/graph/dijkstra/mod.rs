@@ -3,25 +3,21 @@ use std::collections::HashSet;
 use std::time::Instant;
 
 use ordered_float::OrderedFloat;
-use serde::Serialize;
 
 use state::Direction::{BACKWARD, FORWARD};
 use state::{NodeState, State};
 
 use crate::graph::Graph;
-use crate::helpers::{add_floats, Coordinate, Costs, Preference};
+use crate::helpers::{add_floats, Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 
 use super::edge::{add_edge_costs, calc_total_cost};
 
 pub mod state;
 
-#[derive(Debug, Serialize, Clone)]
-pub struct Path {
-    pub nodes: Vec<usize>,
-    pub coordinates: Vec<Coordinate>,
+pub struct DijkstraResult {
+    pub edges: Vec<usize>,
     pub costs: Costs,
-    pub alpha: Preference,
     pub total_cost: f64,
 }
 
@@ -80,7 +76,7 @@ impl<'a> Dijkstra<'a> {
         );
     }
 
-    fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<Path> {
+    fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<DijkstraResult> {
         self.prepare(source, target);
 
         // TODO: Implement termination condition?
@@ -97,16 +93,10 @@ impl<'a> Dijkstra<'a> {
                     total_cost,
                     now.elapsed().as_millis()
                 );
-                let path = self.construct_path(node_id, source);
-                let coordinates = path
-                    .iter()
-                    .map(|id| self.graph.nodes[*id].location.clone())
-                    .collect();
-                Some(Path {
-                    nodes: path,
-                    coordinates,
+                let edges = self.make_edge_path(node_id);
+                Some(DijkstraResult {
+                    edges,
                     costs,
-                    alpha,
                     total_cost: total_cost.into_inner(),
                 })
             }
@@ -180,36 +170,36 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    // TODO: Revisit this function
-    fn construct_path(&self, node_id: usize, source: usize) -> Vec<usize> {
+    fn make_edge_path(&self, connector: usize) -> Vec<usize> {
         let mut edges = Vec::new();
-        let node_state = &self.node_states[node_id];
-        let mut node_and_edge = node_state.previous;
-        while let Some((current_node_id, edge_id)) = node_and_edge {
-            node_and_edge = self.node_states[current_node_id].previous;
+        let mut previous_state = self.node_states[connector].previous;
+        let mut successive_state = self.node_states[connector].successive;
+
+        // backwards
+        while let Some((previous_node, edge_id)) = previous_state {
             edges.push(edge_id);
+            previous_state = self.node_states[previous_node].previous;
         }
         edges.reverse();
-        node_and_edge = node_state.successive;
-        while let Some((current_node_id, edge_id)) = node_and_edge {
-            node_and_edge = self.node_states[current_node_id].successive;
+
+        // forwards
+        while let Some((successive_node, edge_id)) = successive_state {
             edges.push(edge_id);
+            successive_state = self.node_states[successive_node].successive;
         }
-        self.graph.unwrap_edges(edges, source)
+        edges
     }
 }
 
-pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Option<Path> {
+pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> DijkstraResult {
     println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
-    let mut path = Vec::new();
-    let mut coordinates = Vec::new();
+    let mut edges = Vec::new();
     let mut costs = [0.0; EDGE_COST_DIMENSION];
     let mut total_cost = 0.0;
     include.windows(2).for_each(|win| {
         if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
-            path.append(&mut result.nodes);
-            coordinates.append(&mut result.coordinates);
+            edges.append(&mut result.edges);
             costs = add_edge_costs(costs, result.costs);
             total_cost += result.total_cost;
         }
@@ -218,13 +208,11 @@ pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Optio
         "=== Found path with costs: {:?} and total cost: {} ===",
         costs, total_cost
     );
-    Some(Path {
-        nodes: path,
-        coordinates,
+    DijkstraResult {
+        edges,
         costs,
-        alpha,
         total_cost,
-    })
+    }
 }
 
 #[cfg(test)]

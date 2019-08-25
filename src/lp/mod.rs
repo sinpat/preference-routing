@@ -3,9 +3,9 @@ use lp_modeler::problem::{LpFileFormat, LpObjective, LpProblem};
 use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
-use crate::graph::dijkstra::{find_path, Path};
 use crate::graph::edge::calc_total_cost;
 use crate::graph::Graph;
+use crate::graph::Path;
 use crate::helpers::Preference;
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 
@@ -68,11 +68,10 @@ impl PreferenceEstimator {
     ) -> bool {
         let mut all_explained = true;
         for route in driven_routes {
-            let source = route.nodes[0];
-            let target = route.nodes[route.nodes.len() - 1];
-            let result = find_path(graph, vec![source, target], alpha).unwrap();
+            let source = route.coordinates[0].clone();
+            let target = route.coordinates[route.coordinates.len() - 1].clone();
+            let result = graph.find_shortest_path(vec![source, target], alpha);
             if route.nodes == result.nodes {
-                // TODO: Currently this does not work, because there are some duplicates in the paths
                 println!("Paths are equal, proceed with next route");
             } else if calc_total_cost(route.costs, alpha).0 > result.total_cost {
                 all_explained = false;

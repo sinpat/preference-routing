@@ -3,17 +3,26 @@ use std::io::BufRead;
 use std::io::BufReader;
 
 use ordered_float::OrderedFloat;
+use serde::Serialize;
 
-use dijkstra::Path;
 use edge::{Edge, HalfEdge};
 use node::Node;
 
-use crate::helpers::{Coordinate, Preference};
+use crate::helpers::{Coordinate, Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 
 pub mod dijkstra;
 pub mod edge;
 mod node;
+
+#[derive(Debug, Serialize, Clone)]
+pub struct Path {
+    pub nodes: Vec<usize>,
+    pub coordinates: Vec<Coordinate>,
+    pub costs: Costs,
+    pub alpha: Preference,
+    pub total_cost: f64,
+}
 
 #[derive(Debug)]
 pub struct Graph {
@@ -74,12 +83,26 @@ impl Graph {
         }
     }
 
-    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Option<Path> {
-        let include_ids = include
+    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Path {
+        let include_ids: Vec<usize> = include
             .iter()
             .map(|x| self.find_closest_node(x).1)
             .collect();
-        dijkstra::find_path(self, include_ids, alpha)
+        let result = dijkstra::find_path(self, include_ids, alpha);
+
+        let nodes = self.unwrap_edges(result.edges);
+        let coordinates = nodes
+            .iter()
+            .map(|id| self.nodes[*id].location.clone())
+            .collect();
+
+        Path {
+            nodes,
+            coordinates,
+            costs: result.costs,
+            alpha,
+            total_cost: result.total_cost,
+        }
     }
 
     pub fn get_ch_edges_out(&self, node_id: usize) -> &[HalfEdge] {
@@ -104,8 +127,8 @@ impl Graph {
         (&closest.location, closest.id)
     }
 
-    pub fn unwrap_edges(&self, edge_path: Vec<usize>, source_node: usize) -> Vec<usize> {
-        let mut node_path = vec![source_node];
+    pub fn unwrap_edges(&self, edge_path: Vec<usize>) -> Vec<usize> {
+        let mut node_path = Vec::new();
         for edge_id in edge_path {
             node_path.append(&mut self.unpack_edge(edge_id));
         }
@@ -119,7 +142,7 @@ impl Graph {
             relaxed_nodes.append(&mut self.unpack_edge(edge_2));
             return relaxed_nodes;
         }
-        vec![edge.target_id]
+        vec![edge.source_id, edge.target_id]
     }
 }
 

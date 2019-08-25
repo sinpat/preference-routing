@@ -3,8 +3,8 @@ use std::sync::Mutex;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer};
 
-use crate::graph::dijkstra::Path;
 use crate::graph::Graph;
+use crate::graph::Path;
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
 use crate::EDGE_COST_DIMENSION;
@@ -26,13 +26,9 @@ fn fsp(body: web::Json<FspRequest>, state: web::Data<AppState>) -> HttpResponse 
     let graph = &state.graph;
     let alpha = *state.alpha.lock().unwrap();
 
-    match graph.find_shortest_path(waypoints, alpha) {
-        None => HttpResponse::Ok().finish(),
-        Some(fsp_result) => {
-            *state.current_route.lock().unwrap() = Some(fsp_result.clone());
-            HttpResponse::Ok().json(fsp_result)
-        }
-    }
+    let path = graph.find_shortest_path(waypoints, alpha);
+    *state.current_route.lock().unwrap() = Some(path.clone());
+    HttpResponse::Ok().json(path)
 }
 
 fn get_preference(state: web::Data<AppState>) -> HttpResponse {
