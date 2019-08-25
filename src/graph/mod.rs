@@ -4,7 +4,7 @@ use std::io::BufReader;
 
 use ordered_float::OrderedFloat;
 
-use dijkstra::DijkstraResult;
+use dijkstra::Path;
 use edge::{Edge, HalfEdge};
 use node::Node;
 
@@ -78,7 +78,7 @@ impl Graph {
         &self,
         include: Vec<Coordinate>,
         alpha: Preference,
-    ) -> Option<DijkstraResult> {
+    ) -> Option<Path> {
         let include_ids = include
             .iter()
             .map(|x| self.find_closest_node(x).1)

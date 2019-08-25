@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer};
 
-use crate::graph::dijkstra::DijkstraResult;
+use crate::graph::dijkstra::Path;
 use crate::graph::Graph;
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
@@ -42,7 +42,7 @@ fn set_preference(body: web::Json<Preference>, state: web::Data<AppState>) -> Ht
     HttpResponse::Ok().json(new_alpha)
 }
 
-fn calc_preference(state: web::Data<AppState>) -> HttpResponse {
+fn find_preference(state: web::Data<AppState>) -> HttpResponse {
     let graph = &state.graph;
     let current_route = state.current_route.lock().unwrap();
     let mut alpha = state.alpha.lock().unwrap();
@@ -90,7 +90,7 @@ pub fn start_server(graph: Graph) {
                     .route("/fsp", web::post().to(fsp))
                     .route("/preference", web::get().to(get_preference))
                     .route("/preference", web::post().to(set_preference))
-                    .route("/calc_preference", web::post().to(calc_preference))
+                    .route("/find_preference", web::post().to(find_preference))
                     .route("/reset", web::post().to(reset_data)),
             )
     })
@@ -102,8 +102,8 @@ pub fn start_server(graph: Graph) {
 
 struct AppState {
     graph: Graph,
-    driven_routes: Mutex<Vec<DijkstraResult>>,
-    current_route: Mutex<Option<DijkstraResult>>,
+    driven_routes: Mutex<Vec<Path>>,
+    current_route: Mutex<Option<Path>>,
     alpha: Mutex<Preference>,
 }
 

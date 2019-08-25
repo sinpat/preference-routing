@@ -3,7 +3,7 @@ use lp_modeler::problem::{LpFileFormat, LpObjective, LpProblem};
 use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
-use crate::graph::dijkstra::{find_path, DijkstraResult};
+use crate::graph::dijkstra::{find_path, Path};
 use crate::graph::edge::calc_total_cost;
 use crate::graph::Graph;
 use crate::helpers::Preference;
@@ -44,7 +44,7 @@ impl PreferenceEstimator {
     pub fn get_preference(
         &mut self,
         graph: &Graph,
-        driven_routes: &[DijkstraResult],
+        driven_routes: &[Path],
         alpha_in: Preference,
     ) -> Option<Preference> {
         self.check_feasibility(graph, driven_routes, alpha_in);
@@ -60,14 +60,15 @@ impl PreferenceEstimator {
     fn check_feasibility(
         &mut self,
         graph: &Graph,
-        driven_routes: &[DijkstraResult],
+        driven_routes: &[Path],
         alpha: Preference,
     ) -> bool {
         let mut all_explained = true;
         for route in driven_routes {
-            let source = route.path[0];
-            let target = route.path[route.path.len() - 1];
+            let source = route.nodes[0];
+            let target = route.nodes[route.nodes.len() - 1];
             let result = find_path(graph, vec![source, target], alpha).unwrap();
+            // TODO: Check, if the waypoints of the two paths are the same, only checking the total cost is too imprecise
             if calc_total_cost(route.costs, alpha).0 > result.total_cost {
                 all_explained = false;
                 println!(
@@ -106,7 +107,7 @@ impl PreferenceEstimator {
                         if *value != 0.0 {
                             all_zero = false;
                         }
-                        // The order of variables in the HashMap varies
+                        // The order of variables in the HashMap is not fixed
                         for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {
                             if name == tag {
                                 alpha[index] = f64::from(*value);

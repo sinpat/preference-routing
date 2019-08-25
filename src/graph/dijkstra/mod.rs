@@ -16,10 +16,9 @@ use super::edge::{add_edge_costs, calc_total_cost};
 
 pub mod state;
 
-// TODO: Rename this struct
 #[derive(Debug, Serialize, Clone)]
-pub struct DijkstraResult {
-    pub path: Vec<usize>,
+pub struct Path {
+    pub nodes: Vec<usize>,
     pub coordinates: Vec<Coordinate>,
     pub costs: Costs,
     pub alpha: Preference,
@@ -81,7 +80,7 @@ impl<'a> Dijkstra<'a> {
         );
     }
 
-    fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<DijkstraResult> {
+    fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<Path> {
         self.prepare(source, target);
 
         // TODO: Implement termination condition?
@@ -106,8 +105,8 @@ impl<'a> Dijkstra<'a> {
                         lng: self.graph.nodes[*id].location.lng,
                     })
                     .collect();
-                Some(DijkstraResult {
-                    path,
+                Some(Path {
+                    nodes: path,
                     coordinates,
                     costs,
                     alpha,
@@ -202,7 +201,7 @@ impl<'a> Dijkstra<'a> {
     }
 }
 
-pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Option<DijkstraResult> {
+pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Option<Path> {
     println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
     let mut path = Vec::new();
@@ -211,7 +210,7 @@ pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Optio
     let mut total_cost = 0.0;
     include.windows(2).for_each(|win| {
         if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
-            path.append(&mut result.path);
+            path.append(&mut result.nodes);
             coordinates.append(&mut result.coordinates);
             costs = add_edge_costs(costs, result.costs);
             total_cost += result.total_cost;
@@ -221,8 +220,8 @@ pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Optio
         "=== Found path with costs: {:?} and total cost: {} ===",
         costs, total_cost
     );
-    Some(DijkstraResult {
-        path,
+    Some(Path {
+        nodes: path,
         coordinates,
         costs,
         alpha,
