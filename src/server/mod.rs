@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer};
+use serde::Serialize;
 
 use crate::graph::Graph;
 use crate::graph::Path;
@@ -11,7 +12,13 @@ use crate::EDGE_COST_DIMENSION;
 
 type FspRequest = Vec<Coordinate>;
 
-const INITIAL_PREF: [f64; EDGE_COST_DIMENSION] = [0.0, 1.0, 0.0];
+const INITIAL_PREF: Preference = [0.0, 1.0, 0.0];
+
+#[derive(Serialize)]
+struct PrefResponse<'a> {
+    message: &'a str,
+    preference: Preference,
+}
 
 fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
     let graph = &state.graph;
@@ -46,18 +53,30 @@ fn find_preference(state: web::Data<AppState>) -> HttpResponse {
     let current_route = state.current_route.lock().unwrap();
     let mut alpha = state.alpha.lock().unwrap();
     match current_route.clone() {
-        None => HttpResponse::Ok().json(*alpha),
+        None => HttpResponse::Ok().json(PrefResponse {
+            message: "You first have to set a route! Keeping old preference",
+            preference: *alpha,
+        }),
         Some(route) => {
             let mut user_routes = state.driven_routes.lock().unwrap();
+            // TODO: Do not push route prematurely, or pop it when no pref found?
             user_routes.push(route);
 
             // Calculate new preference
             let mut pref_estimator = PreferenceEstimator::new();
             match pref_estimator.get_preference(graph, &user_routes, *alpha) {
-                None => HttpResponse::Ok().json([0.0; 0]),
+                None => {
+                    HttpResponse::Ok().json(PrefResponse {
+                        message: "No feasible preference found",
+                        preference: [0.0; EDGE_COST_DIMENSION],
+                    })
+                },
                 Some(new_pref) => {
                     *alpha = new_pref;
-                    HttpResponse::Ok().json(new_pref)
+                    HttpResponse::Ok().json(PrefResponse {
+                        message: "",
+                        preference: new_pref,
+                    })
                 }
             }
         }
@@ -93,7 +112,7 @@ pub fn start_server(graph: Graph) {
                     .route("/reset", web::post().to(reset_data)),
             )
     })
-    .bind("localhost:8000")
+    .bind("0.0.0.0:8000")
     .expect("Can not bind to port 8000")
     .run()
     .expect("Could not start sever");

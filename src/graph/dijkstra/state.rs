@@ -4,6 +4,7 @@ use ordered_float::OrderedFloat;
 
 use crate::helpers::Costs;
 use crate::EDGE_COST_DIMENSION;
+use crate::graph::{EdgeId, NodeId};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum Direction {
@@ -13,7 +14,7 @@ pub enum Direction {
 
 #[derive(PartialEq)]
 pub struct State {
-    pub node_id: usize,
+    pub node_id: NodeId,
     // costs of the different metrics
     pub costs: Costs,
     // cost including alpha
@@ -22,7 +23,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(node_id: usize, direction: Direction) -> Self {
+    pub fn new(node_id: NodeId, direction: Direction) -> Self {
         State {
             node_id,
             costs: [0.0; EDGE_COST_DIMENSION],
@@ -54,8 +55,8 @@ pub struct NodeState {
     pub from_dist: (Costs, OrderedFloat<f64>),
 
     // Best (node, edge) to/from node
-    pub previous: Option<(usize, usize)>,
-    pub successive: Option<(usize, usize)>,
+    pub previous: Option<(NodeId, EdgeId)>,
+    pub successive: Option<(NodeId, EdgeId)>,
 }
 
 impl NodeState {

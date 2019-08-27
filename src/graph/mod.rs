@@ -15,9 +15,12 @@ pub mod dijkstra;
 pub mod edge;
 mod node;
 
+pub type NodeId = usize;
+pub type EdgeId = usize;
+
 #[derive(Debug, Serialize, Clone)]
 pub struct Path {
-    pub nodes: Vec<usize>,
+    pub nodes: Vec<NodeId>,
     pub coordinates: Vec<Coordinate>,
     pub costs: Costs,
     pub alpha: Preference,
@@ -84,7 +87,7 @@ impl Graph {
     }
 
     pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Path {
-        let include_ids: Vec<usize> = include
+        let include_ids: Vec<NodeId> = include
             .iter()
             .map(|x| self.find_closest_node(x).1)
             .collect();
@@ -105,15 +108,15 @@ impl Graph {
         }
     }
 
-    pub fn get_ch_edges_out(&self, node_id: usize) -> &[HalfEdge] {
+    pub fn get_ch_edges_out(&self, node_id: NodeId) -> &[HalfEdge] {
         &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
     }
 
-    pub fn get_ch_edges_in(&self, node_id: usize) -> &[HalfEdge] {
+    pub fn get_ch_edges_in(&self, node_id: NodeId) -> &[HalfEdge] {
         &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
     }
 
-    pub fn find_closest_node(&self, point: &Coordinate) -> (&Coordinate, usize) {
+    pub fn find_closest_node(&self, point: &Coordinate) -> (&Coordinate, NodeId) {
         // TODO: Return Option
         let mut closest = &self.nodes[0];
         let mut distance = OrderedFloat(std::f64::MAX);
@@ -127,7 +130,7 @@ impl Graph {
         (&closest.location, closest.id)
     }
 
-    pub fn unwrap_edges(&self, edge_path: Vec<usize>) -> Vec<usize> {
+    pub fn unwrap_edges(&self, edge_path: Vec<EdgeId>) -> Vec<NodeId> {
         let mut node_path = Vec::new();
         for edge_id in edge_path {
             node_path.append(&mut self.unpack_edge(edge_id));
@@ -135,7 +138,7 @@ impl Graph {
         node_path
     }
 
-    fn unpack_edge(&self, edge_id: usize) -> Vec<usize> {
+    fn unpack_edge(&self, edge_id: EdgeId) -> Vec<NodeId> {
         let edge = &self.edges[edge_id];
         if let Some((edge_1, edge_2)) = edge.replaced_edges {
             let mut relaxed_nodes = self.unpack_edge(edge_1);
