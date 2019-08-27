@@ -8,7 +8,6 @@ use crate::graph::Graph;
 use crate::graph::Path;
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
-use crate::EDGE_COST_DIMENSION;
 
 type FspRequest = Vec<Coordinate>;
 
@@ -17,7 +16,7 @@ const INITIAL_PREF: Preference = [0.0, 1.0, 0.0];
 #[derive(Serialize)]
 struct PrefResponse<'a> {
     message: &'a str,
-    preference: Preference,
+    preference: Option<Preference>,
 }
 
 fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
@@ -55,27 +54,27 @@ fn find_preference(state: web::Data<AppState>) -> HttpResponse {
     match current_route.clone() {
         None => HttpResponse::Ok().json(PrefResponse {
             message: "You first have to set a route! Keeping old preference",
-            preference: *alpha,
+            preference: None,
         }),
         Some(route) => {
             let mut user_routes = state.driven_routes.lock().unwrap();
-            // TODO: Do not push route prematurely, or pop it when no pref found?
             user_routes.push(route);
 
             // Calculate new preference
             let mut pref_estimator = PreferenceEstimator::new();
             match pref_estimator.get_preference(graph, &user_routes, *alpha) {
                 None => {
+                    user_routes.pop();
                     HttpResponse::Ok().json(PrefResponse {
                         message: "No feasible preference found",
-                        preference: [0.0; EDGE_COST_DIMENSION],
+                        preference: None,
                     })
                 },
                 Some(new_pref) => {
                     *alpha = new_pref;
                     HttpResponse::Ok().json(PrefResponse {
                         message: "",
-                        preference: new_pref,
+                        preference: Some(new_pref),
                     })
                 }
             }
