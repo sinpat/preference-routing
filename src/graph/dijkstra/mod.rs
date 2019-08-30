@@ -7,7 +7,7 @@ use ordered_float::OrderedFloat;
 use state::Direction::{BACKWARD, FORWARD};
 use state::{NodeState, State};
 
-use crate::graph::{Graph, EdgeId, NodeId};
+use crate::graph::{EdgeId, Graph, NodeId};
 use crate::helpers::{add_floats, Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 

@@ -2,9 +2,9 @@ use std::cmp::Ordering;
 
 use ordered_float::OrderedFloat;
 
+use crate::graph::{EdgeId, NodeId};
 use crate::helpers::Costs;
 use crate::EDGE_COST_DIMENSION;
-use crate::graph::{EdgeId, NodeId};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum Direction {

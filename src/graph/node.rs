@@ -1,5 +1,5 @@
-use crate::helpers::Coordinate;
 use crate::graph::NodeId;
+use crate::helpers::Coordinate;
 
 #[derive(Debug)]
 pub struct Node {
