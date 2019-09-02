@@ -4,21 +4,26 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 
 use crate::graph::Graph;
-use crate::graph::Path;
-use crate::helpers::Preference;
-
-const INITIAL_PREF: Preference = [0.0, 1.0, 0.0];
+use crate::user::UserState;
 
 mod routing;
 mod user;
+
+// TODO: Use a graph reference, cloning for each request is not efficient
+pub struct AppState {
+    graph: Graph,
+    users: Mutex<Vec<UserState>>,
+}
 
 pub fn start_server(graph: Graph) {
     println!("Starting server");
     let state = web::Data::new(AppState {
         graph,
-        driven_routes: Mutex::new(Vec::new()),
-        current_route: Mutex::new(None),
-        alpha: Mutex::new(INITIAL_PREF),
+        users: Mutex::new(vec![UserState::new(
+            // standard user
+            String::from("test"),
+            String::from("test"),
+        )]),
     });
     HttpServer::new(move || {
         App::new()
@@ -26,6 +31,25 @@ pub fn start_server(graph: Graph) {
             .register_data(state.clone())
             .service(
                 web::scope("/routing")
+                    /*
+                    .wrap_fn(|req, srv| {
+                        let auth_header = req.headers().get("Authorization");
+                        match auth_header {
+                            None => HttpResponse::Unauthorized().finish(),
+                            Some(value) => {
+                                let token = value.to_str().unwrap();
+                                let mut users = state.users.lock().unwrap();
+                                let user_state = users.iter_mut().find(|x| x.token == token);
+                                match user_state {
+                                    None => HttpResponse::Unauthorized().finish(),
+                                    Some(user) => {
+                                        HttpResponse::Ok().finish()
+                                    }
+                                }
+                            }
+                        }
+                    })
+                    */
                     .route("/closest", web::get().to(routing::find_closest))
                     .route("/fsp", web::post().to(routing::fsp))
                     .route("/preference", web::get().to(routing::get_preference))
@@ -43,14 +67,6 @@ pub fn start_server(graph: Graph) {
     .expect("Can not bind to port 8000")
     .run()
     .expect("Could not start sever");
-}
-
-// TODO: Use a graph reference, cloning for each request is not efficient
-pub struct AppState {
-    graph: Graph,
-    driven_routes: Mutex<Vec<Path>>,
-    current_route: Mutex<Option<Path>>,
-    alpha: Mutex<Preference>,
 }
 
 #[cfg(test)]
