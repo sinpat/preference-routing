@@ -29,7 +29,7 @@ impl UserState {
 
 pub struct UserAuth {
     pub username: String,
-    pub password: String,
+    password: String,
     pub token: String,
 }
 
@@ -45,6 +45,10 @@ impl UserAuth {
     pub fn update_token(&mut self) -> &str {
         self.token = Self::generate_token(&self.username);
         &self.token
+    }
+
+    pub fn credentials_valid(&self, username: &str, password: &str) -> bool {
+        self.username == username && self.password == password
     }
 
     fn generate_token(username: &str) -> String {

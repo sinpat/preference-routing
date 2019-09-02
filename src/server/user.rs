@@ -15,7 +15,7 @@ pub fn login(state: web::Data<AppState>, body: web::Json<Credentials>) -> HttpRe
     let mut users = state.users.lock().unwrap();
     let user_state = users
         .iter_mut()
-        .find(|x| x.auth.username == username && x.auth.password == password);
+        .find(|x| x.auth.credentials_valid(&username, &password));
     match user_state {
         None => HttpResponse::Unauthorized().finish(),
         Some(state) => {
