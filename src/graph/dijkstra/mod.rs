@@ -4,7 +4,7 @@ use std::time::Instant;
 use ordered_float::OrderedFloat;
 
 use state::Direction::{BACKWARD, FORWARD};
-use state::{NodeState, State};
+use state::State;
 
 use crate::graph::{EdgeId, Graph, NodeId};
 use crate::helpers::{add_floats, Costs, Preference};
@@ -27,8 +27,13 @@ pub struct Dijkstra<'a> {
     found_best_b: bool,
     found_best_f: bool,
 
-    // Contains all the information about the nodes
-    node_states: Vec<NodeState>,
+    // Best dist to/from node
+    pub cost_f: Vec<(Costs, OrderedFloat<f64>)>,
+    pub cost_b: Vec<(Costs, OrderedFloat<f64>)>,
+
+    // Best (node, edge) to/from node
+    pub previous_f: Vec<Option<(NodeId, EdgeId)>>,
+    pub previous_b: Vec<Option<(NodeId, EdgeId)>>,
 
     // (node_id, cost array, total_cost)
     best_node: (Option<NodeId>, Costs, OrderedFloat<f64>),
@@ -43,7 +48,10 @@ impl<'a> Dijkstra<'a> {
             touched_nodes: Vec::new(),
             found_best_b: false,
             found_best_f: false,
-            node_states: vec![NodeState::new(); num_of_nodes],
+            cost_f: vec![([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)); num_of_nodes],
+            cost_b: vec![([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)); num_of_nodes],
+            previous_f: vec![None; num_of_nodes],
+            previous_b: vec![None; num_of_nodes],
             best_node: (
                 None,
                 [0.0; EDGE_COST_DIMENSION],
@@ -60,7 +68,10 @@ impl<'a> Dijkstra<'a> {
 
         // Touched nodes
         for node_id in &self.touched_nodes {
-            self.node_states[*node_id] = NodeState::new();
+            self.cost_f[*node_id] = ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX));
+            self.cost_b[*node_id] = ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX));
+            self.previous_f[*node_id] = None;
+            self.previous_b[*node_id] = None;
         }
         self.touched_nodes.clear();
 
@@ -68,8 +79,8 @@ impl<'a> Dijkstra<'a> {
         self.found_best_f = false;
 
         // Node states
-        self.node_states[source].cost_f.1 = OrderedFloat(0.0);
-        self.node_states[target].cost_b.1 = OrderedFloat(0.0);
+        self.cost_f[source].1 = OrderedFloat(0.0);
+        self.cost_b[target].1 = OrderedFloat(0.0);
         self.touched_nodes.push(source);
         self.touched_nodes.push(target);
 
@@ -118,32 +129,34 @@ impl<'a> Dijkstra<'a> {
             total_cost,
             direction,
         } = candidate;
-        let node_state = &self.node_states[node_id];
 
         let my_costs;
         let other_costs;
         let found_best;
+        let previous;
         if direction == FORWARD {
-            my_costs = node_state.cost_f;
-            other_costs = node_state.cost_b;
+            my_costs = &mut self.cost_f;
+            other_costs = &self.cost_b;
             found_best = &mut self.found_best_f;
+            previous = &mut self.previous_f;
         } else {
-            my_costs = node_state.cost_b;
-            other_costs = node_state.cost_f;
+            my_costs = &mut self.cost_b;
+            other_costs = &self.cost_f;
             found_best = &mut self.found_best_b;
+            previous = &mut self.previous_b;
         };
 
-        if total_cost > my_costs.1 {
+        if total_cost > my_costs[node_id].1 {
             return;
         };
         if total_cost > self.best_node.2 {
             *found_best = true;
             return;
         }
-        if other_costs.1 != OrderedFloat(std::f64::MAX) {
-            let merged_cost = add_floats(total_cost, other_costs.1);
+        if other_costs[node_id].1 != OrderedFloat(std::f64::MAX) {
+            let merged_cost = add_floats(total_cost, other_costs[node_id].1);
             if merged_cost < self.best_node.2 {
-                let merged_cost_vector = add_edge_costs(costs, other_costs.0);
+                let merged_cost_vector = add_edge_costs(costs, other_costs[node_id].0);
                 self.best_node = (Some(node_id), merged_cost_vector, merged_cost);
             }
         }
@@ -159,19 +172,9 @@ impl<'a> Dijkstra<'a> {
             let next_total_cost =
                 add_floats(total_cost, calc_total_cost(half_edge.edge_costs, alpha));
 
-            let next_node_state = &mut self.node_states[next_node];
-            let dist;
-            let previous;
-            if direction == FORWARD {
-                dist = &mut next_node_state.cost_f;
-                previous = &mut next_node_state.previous_f;
-            } else {
-                dist = &mut next_node_state.cost_b;
-                previous = &mut next_node_state.previous_b;
-            };
-            if next_total_cost < dist.1 {
-                *dist = (next_costs, next_total_cost);
-                *previous = Some((node_id, half_edge.edge_id));
+            if next_total_cost < my_costs[next_node].1 {
+                my_costs[next_node] = (next_costs, next_total_cost);
+                previous[next_node] = Some((node_id, half_edge.edge_id));
                 self.touched_nodes.push(next_node);
                 self.candidates.push(State {
                     node_id: next_node,
@@ -185,20 +188,20 @@ impl<'a> Dijkstra<'a> {
 
     fn make_edge_path(&self, connector: NodeId) -> Vec<EdgeId> {
         let mut edges = Vec::new();
-        let mut previous_state = self.node_states[connector].previous_f;
-        let mut successive_state = self.node_states[connector].previous_b;
+        let mut previous_state = self.previous_f[connector];
+        let mut successive_state = self.previous_b[connector];
 
         // backwards
         while let Some((previous_node, edge_id)) = previous_state {
             edges.push(edge_id);
-            previous_state = self.node_states[previous_node].previous_f;
+            previous_state = self.previous_f[previous_node];
         }
         edges.reverse();
 
         // forwards
         while let Some((successive_node, edge_id)) = successive_state {
             edges.push(edge_id);
-            successive_state = self.node_states[successive_node].previous_b;
+            successive_state = self.previous_b[successive_node];
         }
         edges
     }
