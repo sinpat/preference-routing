@@ -24,8 +24,8 @@ pub struct Dijkstra<'a> {
     graph: &'a Graph,
     candidates: BinaryHeap<State>,
     touched_nodes: Vec<NodeId>,
-    found_best_backward: bool,
-    found_best_forward: bool,
+    found_best_b: bool,
+    found_best_f: bool,
 
     // Contains all the information about the nodes
     node_states: Vec<NodeState>,
@@ -41,8 +41,8 @@ impl<'a> Dijkstra<'a> {
             graph,
             candidates: BinaryHeap::new(),
             touched_nodes: Vec::new(),
-            found_best_backward: false,
-            found_best_forward: false,
+            found_best_b: false,
+            found_best_f: false,
             node_states: vec![NodeState::new(); num_of_nodes],
             best_node: (
                 None,
@@ -64,12 +64,12 @@ impl<'a> Dijkstra<'a> {
         }
         self.touched_nodes.clear();
 
-        self.found_best_backward = false;
-        self.found_best_forward = false;
+        self.found_best_b = false;
+        self.found_best_f = false;
 
         // Node states
-        self.node_states[source].dist_f.1 = OrderedFloat(0.0);
-        self.node_states[target].dist_b.1 = OrderedFloat(0.0);
+        self.node_states[source].cost_f.1 = OrderedFloat(0.0);
+        self.node_states[target].cost_b.1 = OrderedFloat(0.0);
         self.touched_nodes.push(source);
         self.touched_nodes.push(target);
 
@@ -86,9 +86,10 @@ impl<'a> Dijkstra<'a> {
 
         let now = Instant::now();
         while let Some(candidate) = self.candidates.pop() {
-            if !(self.found_best_forward && self.found_best_backward) {
-                self.process_state(candidate, alpha);
+            if self.found_best_f && self.found_best_b {
+                break;
             }
+            self.process_state(candidate, alpha);
         }
 
         match self.best_node {
@@ -121,23 +122,22 @@ impl<'a> Dijkstra<'a> {
 
         let my_costs;
         let other_costs;
+        let found_best;
         if direction == FORWARD {
-            my_costs = node_state.dist_f;
-            other_costs = node_state.dist_b;
+            my_costs = node_state.cost_f;
+            other_costs = node_state.cost_b;
+            found_best = &mut self.found_best_f;
         } else {
-            my_costs = node_state.dist_b;
-            other_costs = node_state.dist_f;
+            my_costs = node_state.cost_b;
+            other_costs = node_state.cost_f;
+            found_best = &mut self.found_best_b;
         };
 
         if total_cost > my_costs.1 {
             return;
         };
         if total_cost > self.best_node.2 {
-            if direction == FORWARD {
-                self.found_best_forward = true;
-            } else {
-                self.found_best_backward = true;
-            }
+            *found_best = true;
             return;
         }
         if other_costs.1 != OrderedFloat(std::f64::MAX) {
@@ -163,10 +163,10 @@ impl<'a> Dijkstra<'a> {
             let dist;
             let previous;
             if direction == FORWARD {
-                dist = &mut next_node_state.dist_f;
+                dist = &mut next_node_state.cost_f;
                 previous = &mut next_node_state.previous_f;
             } else {
-                dist = &mut next_node_state.dist_b;
+                dist = &mut next_node_state.cost_b;
                 previous = &mut next_node_state.previous_b;
             };
             if next_total_cost < dist.1 {

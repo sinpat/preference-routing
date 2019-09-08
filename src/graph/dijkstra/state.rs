@@ -51,8 +51,8 @@ impl std::cmp::PartialOrd for State {
 #[derive(Clone)]
 pub struct NodeState {
     // Best dist to/from node
-    pub dist_f: (Costs, OrderedFloat<f64>),
-    pub dist_b: (Costs, OrderedFloat<f64>),
+    pub cost_f: (Costs, OrderedFloat<f64>),
+    pub cost_b: (Costs, OrderedFloat<f64>),
 
     // Best (node, edge) to/from node
     pub previous_f: Option<(NodeId, EdgeId)>,
@@ -62,8 +62,8 @@ pub struct NodeState {
 impl NodeState {
     pub fn new() -> Self {
         NodeState {
-            dist_f: ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
-            dist_b: ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
+            cost_f: ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
+            cost_b: ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)),
             previous_f: None,
             previous_b: None,
         }
