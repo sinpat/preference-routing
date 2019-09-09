@@ -6,7 +6,7 @@ use ordered_float::OrderedFloat;
 use state::Direction::{BACKWARD, FORWARD};
 use state::State;
 
-use crate::graph::{EdgeId, Graph, NodeId};
+use crate::graph::Graph;
 use crate::helpers::{add_floats, Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 
@@ -15,7 +15,7 @@ use super::edge::{add_edge_costs, calc_total_cost};
 pub mod state;
 
 pub struct DijkstraResult {
-    pub edges: Vec<EdgeId>,
+    pub edges: Vec<usize>,
     pub costs: Costs,
     pub total_cost: f64,
 }
@@ -23,7 +23,7 @@ pub struct DijkstraResult {
 struct Dijkstra<'a> {
     graph: &'a Graph,
     candidates: BinaryHeap<State>,
-    touched_nodes: Vec<NodeId>,
+    touched_nodes: Vec<usize>,
     found_best_b: bool,
     found_best_f: bool,
 
@@ -32,11 +32,11 @@ struct Dijkstra<'a> {
     pub cost_b: Vec<(Costs, OrderedFloat<f64>)>,
 
     // Best (node, edge) to/from node
-    pub previous_f: Vec<Option<(NodeId, EdgeId)>>,
-    pub previous_b: Vec<Option<(NodeId, EdgeId)>>,
+    pub previous_f: Vec<Option<(usize, usize)>>,
+    pub previous_b: Vec<Option<(usize, usize)>>,
 
     // (node_id, cost array, total_cost)
-    best_node: (Option<NodeId>, Costs, OrderedFloat<f64>),
+    best_node: (Option<usize>, Costs, OrderedFloat<f64>),
 }
 
 impl<'a> Dijkstra<'a> {
@@ -60,7 +60,7 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    fn prepare(&mut self, source: NodeId, target: NodeId) {
+    fn prepare(&mut self, source: usize, target: usize) {
         // Candidates
         self.candidates = BinaryHeap::new();
         self.candidates.push(State::new(source, FORWARD));
@@ -92,7 +92,7 @@ impl<'a> Dijkstra<'a> {
         );
     }
 
-    fn run(&mut self, source: NodeId, target: NodeId, alpha: Preference) -> Option<DijkstraResult> {
+    fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<DijkstraResult> {
         self.prepare(source, target);
 
         let now = Instant::now();
@@ -186,7 +186,7 @@ impl<'a> Dijkstra<'a> {
         }
     }
 
-    fn make_edge_path(&self, connector: NodeId) -> Vec<EdgeId> {
+    fn make_edge_path(&self, connector: usize) -> Vec<usize> {
         let mut edges = Vec::new();
         let mut previous_state = self.previous_f[connector];
         let mut successive_state = self.previous_b[connector];
@@ -207,7 +207,7 @@ impl<'a> Dijkstra<'a> {
     }
 }
 
-pub fn find_path(graph: &Graph, include: Vec<NodeId>, alpha: Preference) -> DijkstraResult {
+pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> DijkstraResult {
     println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
     let mut edges = Vec::new();
