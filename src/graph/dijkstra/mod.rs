@@ -20,7 +20,7 @@ pub struct DijkstraResult {
     pub total_cost: f64,
 }
 
-pub struct Dijkstra<'a> {
+struct Dijkstra<'a> {
     graph: &'a Graph,
     candidates: BinaryHeap<State>,
     touched_nodes: Vec<NodeId>,
@@ -240,6 +240,10 @@ mod tests {
     use super::*;
 
     fn get_graph() -> Graph {
+        parse_graph_file("./src/test_graphs/testGraph").unwrap()
+    }
+
+    fn get_conc_graph() -> Graph {
         parse_graph_file("./src/test_graphs/concTestGraph").unwrap()
     }
 
@@ -257,44 +261,62 @@ mod tests {
 
     #[test]
     fn normal_case() {
-        /*
         let graph = get_graph();
+        let conc_graph = get_conc_graph();
         let mut dijkstra = Dijkstra::new(&graph);
+        let mut dijkstra_conc = Dijkstra::new(&conc_graph);
+        let alpha = [0.0, 1.0, 0.0];
+
         let mut shortest_path;
+        let mut shortest_path_conc;
         let mut path;
-        let mut expected_path: Vec<NodeId>;
+        let mut path_conc;
 
         // first query
-        shortest_path = dijkstra.find_shortest_path(0, 4);
-        assert!(shortest_path.is_none());
+        assert!(dijkstra.run(0, 4, alpha).is_none());
+        assert!(dijkstra_conc.run(0, 4, alpha).is_none());
 
         // second query
-        shortest_path = dijkstra.find_shortest_path(4, 11);
-        assert!(shortest_path.is_none());
+        assert!(dijkstra.run(4, 11, alpha).is_none());
+        assert!(dijkstra_conc.run(4, 11, alpha).is_none());
 
         // third query
-        shortest_path = dijkstra.find_shortest_path(2, 5);
+        shortest_path = dijkstra.run(2, 5, alpha);
+        shortest_path_conc = dijkstra_conc.run(2, 5, alpha);
         assert!(shortest_path.is_some());
+        assert!(shortest_path_conc.is_some());
+
         path = shortest_path.unwrap();
-        expected_path = vec![2, 4, 5];
-        assert_eq!(expected_path, path.0);
-        assert_eq!(OrderedFloat(4.0), path.1);
+        path_conc = shortest_path_conc.unwrap();
+        assert_eq!(path.edges, vec![4, 7]);
+        assert_eq!(path.total_cost, 2.0);
+        assert_eq!(path_conc.edges, vec![4, 7]);
+        assert_eq!(path_conc.total_cost, 2.0);
 
         // fourth query
-        shortest_path = dijkstra.find_shortest_path(2, 10);
+        shortest_path = dijkstra.run(2, 10, alpha);
+        shortest_path_conc = dijkstra_conc.run(2, 10, alpha);
         assert!(shortest_path.is_some());
+        assert!(shortest_path_conc.is_some());
+
         path = shortest_path.unwrap();
-        expected_path = vec![2, 4, 5, 7, 10];
-        assert_eq!(expected_path, path.0);
-        assert_eq!(OrderedFloat(8.0), path.1);
+        path_conc = shortest_path_conc.unwrap();
+        assert_eq!(path.edges, vec![4, 7, 9, 12]);
+        assert_eq!(path.total_cost, 4.0);
+        assert_eq!(path_conc.edges, vec![4, 21]);
+        assert_eq!(path_conc.total_cost, 4.0);
 
         // fifth query
-        shortest_path = dijkstra.find_shortest_path(6, 10);
+        shortest_path = dijkstra.run(4, 10, alpha);
+        shortest_path_conc = dijkstra_conc.run(4, 10, alpha);
         assert!(shortest_path.is_some());
+        assert!(shortest_path_conc.is_some());
+
         path = shortest_path.unwrap();
-        expected_path = vec![6, 4, 5, 7, 10];
-        assert_eq!(expected_path, path.0);
-        assert_eq!(OrderedFloat(10.0), path.1);
-        */
+        path_conc = shortest_path_conc.unwrap();
+        assert_eq!(path.edges, vec![7, 9, 12]);
+        assert_eq!(path.total_cost, 3.0);
+        assert_eq!(path_conc.edges, vec![21]);
+        assert_eq!(path_conc.total_cost, 3.0);
     }
 }
