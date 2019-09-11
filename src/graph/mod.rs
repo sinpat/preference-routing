@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-use ordered_float::OrderedFloat;
 use serde::Serialize;
 
 use edge::{Edge, HalfEdge};
@@ -116,7 +115,7 @@ impl Graph {
     pub fn find_closest_node(&self, point: &Coordinate) -> (&Coordinate, usize) {
         // TODO: Return Option
         let mut closest = &self.nodes[0];
-        let mut distance = OrderedFloat(std::f64::MAX);
+        let mut distance = std::f64::MAX;
         for node in &self.nodes {
             let current_distance = point.distance_to(&node.location);
             if current_distance < distance {

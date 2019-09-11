@@ -1,13 +1,11 @@
 use std::collections::binary_heap::BinaryHeap;
 use std::time::Instant;
 
-use ordered_float::OrderedFloat;
-
 use state::Direction::{BACKWARD, FORWARD};
 use state::State;
 
 use crate::graph::Graph;
-use crate::helpers::{add_floats, Costs, Preference};
+use crate::helpers::{Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 
 use super::edge::{add_edge_costs, calc_total_cost};
@@ -28,15 +26,15 @@ struct Dijkstra<'a> {
     found_best_f: bool,
 
     // Best dist to/from node
-    pub cost_f: Vec<(Costs, OrderedFloat<f64>)>,
-    pub cost_b: Vec<(Costs, OrderedFloat<f64>)>,
+    pub cost_f: Vec<(Costs, f64)>,
+    pub cost_b: Vec<(Costs, f64)>,
 
     // Best (node, edge) to/from node
     pub previous_f: Vec<Option<(usize, usize)>>,
     pub previous_b: Vec<Option<(usize, usize)>>,
 
     // (node_id, cost array, total_cost)
-    best_node: (Option<usize>, Costs, OrderedFloat<f64>),
+    best_node: (Option<usize>, Costs, f64),
 }
 
 impl<'a> Dijkstra<'a> {
@@ -48,15 +46,11 @@ impl<'a> Dijkstra<'a> {
             touched_nodes: Vec::new(),
             found_best_b: false,
             found_best_f: false,
-            cost_f: vec![([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)); num_of_nodes],
-            cost_b: vec![([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX)); num_of_nodes],
+            cost_f: vec![([0.0; EDGE_COST_DIMENSION], std::f64::MAX); num_of_nodes],
+            cost_b: vec![([0.0; EDGE_COST_DIMENSION], std::f64::MAX); num_of_nodes],
             previous_f: vec![None; num_of_nodes],
             previous_b: vec![None; num_of_nodes],
-            best_node: (
-                None,
-                [0.0; EDGE_COST_DIMENSION],
-                OrderedFloat(std::f64::MAX),
-            ),
+            best_node: (None, [0.0; EDGE_COST_DIMENSION], std::f64::MAX),
         }
     }
 
@@ -68,8 +62,8 @@ impl<'a> Dijkstra<'a> {
 
         // Touched nodes
         for node_id in &self.touched_nodes {
-            self.cost_f[*node_id] = ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX));
-            self.cost_b[*node_id] = ([0.0; EDGE_COST_DIMENSION], OrderedFloat(std::f64::MAX));
+            self.cost_f[*node_id] = ([0.0; EDGE_COST_DIMENSION], std::f64::MAX);
+            self.cost_b[*node_id] = ([0.0; EDGE_COST_DIMENSION], std::f64::MAX);
             self.previous_f[*node_id] = None;
             self.previous_b[*node_id] = None;
         }
@@ -79,17 +73,13 @@ impl<'a> Dijkstra<'a> {
         self.found_best_f = false;
 
         // Node states
-        self.cost_f[source].1 = OrderedFloat(0.0);
-        self.cost_b[target].1 = OrderedFloat(0.0);
+        self.cost_f[source].1 = 0.0;
+        self.cost_b[target].1 = 0.0;
         self.touched_nodes.push(source);
         self.touched_nodes.push(target);
 
         // Best node
-        self.best_node = (
-            None,
-            [0.0; EDGE_COST_DIMENSION],
-            OrderedFloat(std::f64::MAX),
-        );
+        self.best_node = (None, [0.0; EDGE_COST_DIMENSION], std::f64::MAX);
     }
 
     fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<DijkstraResult> {
@@ -116,7 +106,7 @@ impl<'a> Dijkstra<'a> {
                 Some(DijkstraResult {
                     edges,
                     costs,
-                    total_cost: total_cost.into_inner(),
+                    total_cost,
                 })
             }
         }
@@ -153,8 +143,8 @@ impl<'a> Dijkstra<'a> {
             *found_best = true;
             return;
         }
-        if other_costs[node_id].1 != OrderedFloat(std::f64::MAX) {
-            let merged_cost = add_floats(total_cost, other_costs[node_id].1);
+        if other_costs[node_id].1 != std::f64::MAX {
+            let merged_cost = total_cost + other_costs[node_id].1;
             if merged_cost < self.best_node.2 {
                 let merged_cost_vector = add_edge_costs(costs, other_costs[node_id].0);
                 self.best_node = (Some(node_id), merged_cost_vector, merged_cost);
@@ -169,8 +159,7 @@ impl<'a> Dijkstra<'a> {
         for half_edge in edges {
             let next_node = half_edge.target_id;
             let next_costs = add_edge_costs(costs, half_edge.edge_costs);
-            let next_total_cost =
-                add_floats(total_cost, calc_total_cost(half_edge.edge_costs, alpha));
+            let next_total_cost = total_cost + calc_total_cost(half_edge.edge_costs, alpha);
 
             if next_total_cost < my_costs[next_node].1 {
                 my_costs[next_node] = (next_costs, next_total_cost);
@@ -233,8 +222,6 @@ pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> Dijks
 
 #[cfg(test)]
 mod tests {
-    use ordered_float::OrderedFloat;
-
     use crate::graph::{parse_graph_file, Graph};
 
     use super::*;

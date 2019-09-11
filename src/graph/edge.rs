@@ -1,5 +1,3 @@
-use ordered_float::OrderedFloat;
-
 use crate::helpers::{Costs, Preference};
 
 use super::EDGE_COST_DIMENSION;
@@ -56,12 +54,11 @@ impl HalfEdge {
     }
 }
 
-pub fn calc_total_cost(costs: Costs, alpha: Preference) -> OrderedFloat<f64> {
+pub fn calc_total_cost(costs: Costs, alpha: Preference) -> f64 {
     costs
         .iter()
         .zip(alpha.iter())
         .fold(0.0, |acc, (cost, factor)| acc + cost * factor)
-        .into()
 }
 
 pub fn add_edge_costs(a: Costs, b: Costs) -> Costs {

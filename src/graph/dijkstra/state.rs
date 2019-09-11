@@ -17,7 +17,7 @@ pub struct State {
     // costs of the different metrics
     pub costs: Costs,
     // cost including alpha
-    pub total_cost: OrderedFloat<f64>,
+    pub total_cost: f64,
     pub direction: Direction,
 }
 
@@ -26,7 +26,7 @@ impl State {
         State {
             node_id,
             costs: [0.0; EDGE_COST_DIMENSION],
-            total_cost: OrderedFloat(0.0),
+            total_cost: 0.0,
             direction,
         }
     }
@@ -37,7 +37,7 @@ impl std::cmp::Eq for State {}
 impl std::cmp::Ord for State {
     // switch comparison, because we want a min-heap
     fn cmp(&self, other: &Self) -> Ordering {
-        other.total_cost.cmp(&self.total_cost)
+        OrderedFloat(other.total_cost).cmp(&OrderedFloat(self.total_cost))
     }
 }
 

@@ -73,11 +73,11 @@ impl PreferenceEstimator {
             let result = graph.find_shortest_path(vec![source, target], alpha);
             if route.nodes == result.nodes {
                 println!("Paths are equal, proceed with next route");
-            } else if calc_total_cost(route.costs, alpha).0 > result.total_cost {
+            } else if calc_total_cost(route.costs, alpha) > result.total_cost {
                 all_explained = false;
                 println!(
                     "Not explained, {} > {}",
-                    calc_total_cost(route.costs, alpha).0,
+                    calc_total_cost(route.costs, alpha),
                     result.total_cost
                 );
                 let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));
