@@ -1,6 +1,7 @@
 use crate::graph::Path;
 use crate::helpers::Preference;
 use serde::{Deserialize, Serialize};
+use sha3::{Digest, Sha3_512};
 
 const INITIAL_PREF: Preference = [0.0, 1.0, 0.0];
 
@@ -32,7 +33,7 @@ impl UserState {
 #[derive(Deserialize, Serialize)]
 pub struct UserAuth {
     pub username: String,
-    password: String,
+    hash: Vec<u8>,
     pub token: String,
 }
 
@@ -41,7 +42,7 @@ impl UserAuth {
         UserAuth {
             token: Self::generate_token(&username),
             username,
-            password,
+            hash: Self::hash_password(&password),
         }
     }
 
@@ -51,10 +52,17 @@ impl UserAuth {
     }
 
     pub fn credentials_valid(&self, username: &str, password: &str) -> bool {
-        self.username == username && self.password == password
+        let password_hash = Self::hash_password(password);
+        self.username == username && self.hash == password_hash
     }
 
     fn generate_token(username: &str) -> String {
         String::from(username)
+    }
+
+    fn hash_password(password: &str) -> Vec<u8> {
+        let mut hasher = Sha3_512::new();
+        hasher.input(password);
+        hasher.result().to_vec()
     }
 }

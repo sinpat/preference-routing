@@ -22,16 +22,15 @@ pub struct AppState {
 
 pub fn start_server(graph: Graph) {
     println!("Reading user database...");
-    let mut users = if let Some(state) = read_state_from_file() {
+    let users = if let Some(state) = read_state_from_file() {
         state
     } else {
-        Vec::new()
+        vec![UserState::new(
+            // test user
+            String::from("test"),
+            String::from("test"),
+        )]
     };
-    users.push(UserState::new(
-        // test user
-        String::from("test"),
-        String::from("test"),
-    ));
     let state = web::Data::new(AppState {
         graph,
         users: Mutex::new(users),
