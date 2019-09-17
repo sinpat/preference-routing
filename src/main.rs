@@ -7,7 +7,7 @@ mod server;
 mod user;
 
 const EDGE_COST_DIMENSION: usize = 3;
-const EDGE_COST_TAGS: [&str; EDGE_COST_DIMENSION] = ["Unsuit", "Distance", "Height"];
+const EDGE_COST_TAGS: [&str; EDGE_COST_DIMENSION] = ["Distance", "Height", "UnsuitDist"];
 
 fn main() {
     let args: Vec<String> = env::args().collect();
