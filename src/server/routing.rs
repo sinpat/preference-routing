@@ -27,11 +27,9 @@ pub fn fsp(
     body: web::Json<FspRequest>,
     state: web::Data<AppState>,
 ) -> HttpResponse {
-    let auth_header = req.headers().get("Authorization");
-    match auth_header {
+    match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
-        Some(value) => {
-            let token = value.to_str().unwrap();
+        Some(token) => {
             let mut users = state.users.lock().unwrap();
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
@@ -42,6 +40,7 @@ pub fn fsp(
 
                     let path = state.graph.find_shortest_path(waypoints, alpha);
                     user.current_route = Some(path.clone());
+                    super::write_state_to_file(&*users);
                     HttpResponse::Ok().json(path)
                 }
             }
@@ -50,11 +49,9 @@ pub fn fsp(
 }
 
 pub fn get_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
-    let auth_header = req.headers().get("Authorization");
-    match auth_header {
+    match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
-        Some(value) => {
-            let token = value.to_str().unwrap();
+        Some(token) => {
             let mut users = state.users.lock().unwrap();
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
@@ -70,11 +67,9 @@ pub fn set_preference(
     body: web::Json<Preference>,
     state: web::Data<AppState>,
 ) -> HttpResponse {
-    let auth_header = req.headers().get("Authorization");
-    match auth_header {
+    match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
-        Some(value) => {
-            let token = value.to_str().unwrap();
+        Some(token) => {
             let mut users = state.users.lock().unwrap();
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
@@ -82,6 +77,7 @@ pub fn set_preference(
                 Some(user) => {
                     let new_alpha = body.into_inner();
                     user.alpha = new_alpha;
+                    super::write_state_to_file(&*users);
                     HttpResponse::Ok().json(new_alpha)
                 }
             }
@@ -90,18 +86,16 @@ pub fn set_preference(
 }
 
 pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
-    let auth_header = req.headers().get("Authorization");
-    match auth_header {
+    match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
-        Some(value) => {
-            let token = value.to_str().unwrap();
+        Some(token) => {
             let mut users = state.users.lock().unwrap();
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
                     let graph = &state.graph;
-                    match user.current_route.clone() {
+                    let response = match user.current_route.clone() {
                         None => HttpResponse::Ok().json(PrefResponse {
                             message: "You first have to set a route! Keeping old preference",
                             preference: None,
@@ -129,7 +123,9 @@ pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResp
                                 }
                             }
                         }
-                    }
+                    };
+                    super::write_state_to_file(&*users);
+                    response
                 }
             }
         }
@@ -137,20 +133,27 @@ pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResp
 }
 
 pub fn reset_data(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
-    let auth_header = req.headers().get("Authorization");
-    match auth_header {
+    match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
-        Some(value) => {
-            let token = value.to_str().unwrap();
+        Some(token) => {
             let mut users = state.users.lock().unwrap();
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
                     user.reset();
+                    super::write_state_to_file(&*users);
                     HttpResponse::Ok().finish()
                 }
             }
         }
+    }
+}
+
+fn extract_token(req: &HttpRequest) -> Option<&str> {
+    let auth_header = req.headers().get("Authorization");
+    match auth_header {
+        None => None,
+        Some(value) => Some(value.to_str().unwrap()),
     }
 }

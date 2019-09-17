@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use edge::{Edge, HalfEdge};
 use node::Node;
@@ -14,7 +14,7 @@ pub mod dijkstra;
 pub mod edge;
 mod node;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Path {
     pub nodes: Vec<usize>,
     pub coordinates: Vec<Coordinate>,

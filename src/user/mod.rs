@@ -1,8 +1,10 @@
 use crate::graph::Path;
 use crate::helpers::Preference;
+use serde::{Deserialize, Serialize};
 
 const INITIAL_PREF: Preference = [0.0, 1.0, 0.0];
 
+#[derive(Deserialize, Serialize)]
 pub struct UserState {
     pub auth: UserAuth,
     pub driven_routes: Vec<Path>,
@@ -27,6 +29,7 @@ impl UserState {
     }
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct UserAuth {
     pub username: String,
     password: String,
@@ -42,9 +45,9 @@ impl UserAuth {
         }
     }
 
-    pub fn update_token(&mut self) -> &str {
+    pub fn update_token(&mut self) -> String {
         self.token = Self::generate_token(&self.username);
-        &self.token
+        self.token.to_string()
     }
 
     pub fn credentials_valid(&self, username: &str, password: &str) -> bool {
