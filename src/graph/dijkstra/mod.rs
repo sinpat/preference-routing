@@ -5,12 +5,10 @@ use state::Direction::{BACKWARD, FORWARD};
 use state::State;
 
 use crate::graph::Graph;
-use crate::helpers::{Costs, Preference};
+use crate::helpers::{add_edge_costs, costs_by_alpha, Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 
-use super::edge::{add_edge_costs, calc_total_cost};
-
-pub mod state;
+mod state;
 
 pub struct DijkstraResult {
     pub edges: Vec<usize>,
@@ -159,7 +157,7 @@ impl<'a> Dijkstra<'a> {
         for half_edge in edges {
             let next_node = half_edge.target_id;
             let next_costs = add_edge_costs(costs, half_edge.edge_costs);
-            let next_total_cost = total_cost + calc_total_cost(half_edge.edge_costs, alpha);
+            let next_total_cost = total_cost + costs_by_alpha(half_edge.edge_costs, alpha);
 
             if next_total_cost < my_costs[next_node].1 {
                 my_costs[next_node] = (next_costs, next_total_cost);

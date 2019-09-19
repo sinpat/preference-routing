@@ -3,10 +3,9 @@ use lp_modeler::problem::{LpFileFormat, LpObjective, LpProblem};
 use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
-use crate::graph::edge::calc_total_cost;
 use crate::graph::Graph;
 use crate::graph::Path;
-use crate::helpers::Preference;
+use crate::helpers::{costs_by_alpha, Preference};
 use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
 
 // TODO: Remove this struct?
@@ -73,11 +72,11 @@ impl PreferenceEstimator {
             let result = graph.find_shortest_path(vec![source, target], alpha);
             if route.nodes == result.nodes {
                 println!("Paths are equal, proceed with next route");
-            } else if calc_total_cost(route.costs, alpha) > result.total_cost {
+            } else if costs_by_alpha(route.costs, alpha) > result.total_cost {
                 all_explained = false;
                 println!(
                     "Not explained, {} > {}",
-                    calc_total_cost(route.costs, alpha),
+                    costs_by_alpha(route.costs, alpha),
                     result.total_cost
                 );
                 let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));

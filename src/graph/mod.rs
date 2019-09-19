@@ -10,8 +10,8 @@ use node::Node;
 use crate::helpers::{Coordinate, Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 
-pub mod dijkstra;
-pub mod edge;
+mod dijkstra;
+mod edge;
 mod node;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -104,14 +104,6 @@ impl Graph {
         }
     }
 
-    pub fn get_ch_edges_out(&self, node_id: usize) -> &[HalfEdge] {
-        &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
-    }
-
-    pub fn get_ch_edges_in(&self, node_id: usize) -> &[HalfEdge] {
-        &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
-    }
-
     pub fn find_closest_node(&self, point: &Coordinate) -> &Node {
         self.nodes
             .iter()
@@ -119,7 +111,15 @@ impl Graph {
             .expect("The graph has no nodes!")
     }
 
-    pub fn unwrap_edges(&self, edge_path: Vec<usize>) -> Vec<usize> {
+    fn get_ch_edges_out(&self, node_id: usize) -> &[HalfEdge] {
+        &self.half_edges_out[self.offsets_out[node_id]..self.offsets_out[node_id + 1]]
+    }
+
+    fn get_ch_edges_in(&self, node_id: usize) -> &[HalfEdge] {
+        &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
+    }
+
+    fn unwrap_edges(&self, edge_path: Vec<usize>) -> Vec<usize> {
         let mut node_path = Vec::new();
         for edge_id in edge_path {
             node_path.append(&mut self.unpack_edge(edge_id));
