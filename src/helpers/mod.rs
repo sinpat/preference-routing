@@ -1,3 +1,4 @@
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
 use crate::EDGE_COST_DIMENSION;
@@ -12,8 +13,10 @@ pub struct Coordinate {
 }
 
 impl Coordinate {
-    pub fn distance_to(&self, other: &Coordinate) -> f64 {
-        ((self.lat - other.lat).powi(2) + (self.lng - other.lng).powi(2)).sqrt()
+    pub fn distance_to(&self, other: &Coordinate) -> OrderedFloat<f64> {
+        ((self.lat - other.lat).powi(2) + (self.lng - other.lng).powi(2))
+            .sqrt()
+            .into()
     }
 }
 

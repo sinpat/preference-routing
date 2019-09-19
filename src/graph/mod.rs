@@ -85,7 +85,7 @@ impl Graph {
     pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Path {
         let include_ids: Vec<usize> = include
             .iter()
-            .map(|x| self.find_closest_node(x).1)
+            .map(|x| self.find_closest_node(x).id)
             .collect();
         let result = dijkstra::find_path(self, include_ids, alpha);
 
@@ -112,18 +112,11 @@ impl Graph {
         &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
     }
 
-    pub fn find_closest_node(&self, point: &Coordinate) -> (&Coordinate, usize) {
-        // TODO: Return Option
-        let mut closest = &self.nodes[0];
-        let mut distance = std::f64::MAX;
-        for node in &self.nodes {
-            let current_distance = point.distance_to(&node.location);
-            if current_distance < distance {
-                closest = node;
-                distance = current_distance;
-            }
-        }
-        (&closest.location, closest.id)
+    pub fn find_closest_node(&self, point: &Coordinate) -> &Node {
+        self.nodes
+            .iter()
+            .min_by_key(|node| point.distance_to(&node.location))
+            .expect("The graph has no nodes!")
     }
 
     pub fn unwrap_edges(&self, edge_path: Vec<usize>) -> Vec<usize> {

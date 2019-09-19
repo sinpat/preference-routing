@@ -16,9 +16,9 @@ pub struct PrefResponse<'a> {
 
 pub fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
     let graph = &state.graph;
-    let point = query.into_inner();
+    let coordinate = query.into_inner();
 
-    let (location, _) = graph.find_closest_node(&point);
+    let location = &graph.find_closest_node(&coordinate).location;
     HttpResponse::Ok().json(location)
 }
 
