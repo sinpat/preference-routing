@@ -87,9 +87,17 @@ impl Graph {
             .iter()
             .map(|x| self.find_closest_node(x).id)
             .collect();
+        let last_node = *include_ids.last().unwrap();
         let result = dijkstra::find_path(self, include_ids, alpha);
 
-        let nodes = self.unwrap_edges(result.edges);
+        let mut nodes: Vec<usize> = result
+            .edges
+            .iter()
+            .flat_map(|edge| self.unpack_edge(*edge))
+            .map(|edge| self.edges[edge].source_id)
+            .collect();
+        nodes.push(last_node);
+
         let coordinates = nodes
             .iter()
             .map(|id| self.nodes[*id].location.clone())
@@ -119,22 +127,13 @@ impl Graph {
         &self.half_edges_in[self.offsets_in[node_id]..self.offsets_in[node_id + 1]]
     }
 
-    fn unwrap_edges(&self, edge_path: Vec<usize>) -> Vec<usize> {
-        let mut node_path = Vec::new();
-        for edge_id in edge_path {
-            node_path.append(&mut self.unpack_edge(edge_id));
+    fn unpack_edge(&self, edge: usize) -> Vec<usize> {
+        if let Some((edge1, edge2)) = self.edges[edge].replaced_edges {
+            let mut edges = self.unpack_edge(edge1);
+            edges.append(&mut self.unpack_edge(edge2));
+            return edges;
         }
-        node_path
-    }
-
-    fn unpack_edge(&self, edge_id: usize) -> Vec<usize> {
-        let edge = &self.edges[edge_id];
-        if let Some((edge_1, edge_2)) = edge.replaced_edges {
-            let mut relaxed_nodes = self.unpack_edge(edge_1);
-            relaxed_nodes.append(&mut self.unpack_edge(edge_2));
-            return relaxed_nodes;
-        }
-        vec![edge.source_id, edge.target_id]
+        vec![edge]
     }
 }
 
