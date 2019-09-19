@@ -3,12 +3,13 @@ use std::io::{Read, Write};
 use std::sync::Mutex;
 
 use actix_cors::Cors;
+use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer};
+use futures::Future;
 
 use crate::graph::Graph;
 use crate::user::UserState;
-// use actix_web::dev::Service;
-// use futures::Future;
+
 // use actix_web::dev::{Service, ServiceResponse};
 // use futures::{Future, IntoFuture};
 
@@ -28,7 +29,7 @@ pub fn start_server(graph: Graph) {
         vec![UserState::new(
             // test user
             String::from("test"),
-            String::from("test"),
+            String::from("testtest"),
         )]
     };
     let state = web::Data::new(AppState {
@@ -42,15 +43,14 @@ pub fn start_server(graph: Graph) {
             .register_data(state.clone())
             .service(
                 web::scope("/routing")
-                    /*
                     .wrap_fn(|req, srv| {
                         srv.call(req).map(|res| {
-                            let users = state.users.lock().unwrap();
-                            write_state_to_file(users.clone());
+                            let req = res.request();
+                            let state: &AppState = req.app_data().unwrap();
+                            write_state_to_file(&state.users.lock().unwrap());
                             res
                         })
                     })
-                    */
                     /*
                     .wrap_fn(|req, srv| {
                         let unauth: Box<dyn IntoFuture<Item = ServiceResponse>> =

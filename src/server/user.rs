@@ -21,7 +21,6 @@ pub fn login(state: web::Data<AppState>, body: web::Json<Credentials>) -> HttpRe
         Some(state) => {
             println!("Login user {}", username);
             let token = state.auth.update_token();
-            super::write_state_to_file(&*users);
             HttpResponse::Ok().json(token)
         }
     }
@@ -38,6 +37,5 @@ pub fn register(state: web::Data<AppState>, body: web::Json<Credentials>) -> Htt
     let new_user = UserState::new(username, password);
     let token = new_user.auth.token.clone();
     users.push(new_user);
-    super::write_state_to_file(&*users);
     HttpResponse::Ok().json(token)
 }

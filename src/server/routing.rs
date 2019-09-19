@@ -40,7 +40,6 @@ pub fn fsp(
 
                     let path = state.graph.find_shortest_path(waypoints, alpha);
                     user.current_route = Some(path.clone());
-                    super::write_state_to_file(&*users);
                     HttpResponse::Ok().json(path)
                 }
             }
@@ -77,7 +76,6 @@ pub fn set_preference(
                 Some(user) => {
                     let new_alpha = body.into_inner();
                     user.alpha = new_alpha;
-                    super::write_state_to_file(&*users);
                     HttpResponse::Ok().json(new_alpha)
                 }
             }
@@ -95,7 +93,7 @@ pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResp
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
                     let graph = &state.graph;
-                    let response = match user.current_route.clone() {
+                    match user.current_route.clone() {
                         None => HttpResponse::Ok().json(PrefResponse {
                             message: "You first have to set a route! Keeping old preference",
                             preference: None,
@@ -123,9 +121,7 @@ pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResp
                                 }
                             }
                         }
-                    };
-                    super::write_state_to_file(&*users);
-                    response
+                    }
                 }
             }
         }
@@ -142,7 +138,6 @@ pub fn reset_data(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse 
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
                     user.reset();
-                    super::write_state_to_file(&*users);
                     HttpResponse::Ok().finish()
                 }
             }
