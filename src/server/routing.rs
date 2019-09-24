@@ -137,11 +137,7 @@ pub fn get_routes(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse 
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
-                    let routes: Vec<&Vec<Coordinate>> = user
-                        .driven_routes
-                        .iter()
-                        .map(|route| &route.coordinates)
-                        .collect();
+                    let routes = &user.driven_routes;
                     HttpResponse::Ok().json(routes)
                 }
             }
