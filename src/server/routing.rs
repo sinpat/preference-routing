@@ -128,6 +128,27 @@ pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResp
     }
 }
 
+pub fn get_routes(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    match extract_token(&req) {
+        None => HttpResponse::Unauthorized().finish(),
+        Some(token) => {
+            let users = state.users.lock().unwrap();
+            let user_state = users.iter().find(|x| x.auth.token == token);
+            match user_state {
+                None => HttpResponse::Unauthorized().finish(),
+                Some(user) => {
+                    let routes: Vec<&Vec<Coordinate>> = user
+                        .driven_routes
+                        .iter()
+                        .map(|route| &route.coordinates)
+                        .collect();
+                    HttpResponse::Ok().json(routes)
+                }
+            }
+        }
+    }
+}
+
 pub fn reset_data(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),

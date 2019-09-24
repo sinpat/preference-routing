@@ -78,6 +78,7 @@ pub fn start_server(graph: Graph) {
                     .route("/preference", web::get().to(routing::get_preference))
                     .route("/preference", web::post().to(routing::set_preference))
                     .route("/find_preference", web::post().to(routing::find_preference))
+                    .route("/routes", web::get().to(routing::get_routes))
                     .route("/reset", web::post().to(routing::reset_data)),
             )
             .service(
