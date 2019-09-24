@@ -3,7 +3,7 @@ use crate::helpers::Preference;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_512};
 
-const INITIAL_PREF: Preference = [0.0, 1.0, 0.0];
+const INITIAL_PREF: Preference = [1.0, 0.0, 0.0];
 
 #[derive(Deserialize, Serialize)]
 pub struct UserState {

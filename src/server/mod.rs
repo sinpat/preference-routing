@@ -18,12 +18,13 @@ mod user;
 
 pub struct AppState {
     graph: Graph,
+    database_path: String,
     users: Mutex<Vec<UserState>>,
 }
 
-pub fn start_server(graph: Graph) {
+pub fn start_server(graph: Graph, port: String, database_path: String) {
     println!("Reading user database...");
-    let users = if let Some(state) = read_state_from_file() {
+    let users = if let Some(state) = read_state_from_file(database_path.clone()) {
         state
     } else {
         vec![UserState::new(
@@ -34,6 +35,7 @@ pub fn start_server(graph: Graph) {
     };
     let state = web::Data::new(AppState {
         graph,
+        database_path,
         users: Mutex::new(users),
     });
     println!("Starting server");
@@ -47,7 +49,7 @@ pub fn start_server(graph: Graph) {
                         srv.call(req).map(|res| {
                             let req = res.request();
                             let state: &AppState = req.app_data().unwrap();
-                            write_state_to_file(&state.users.lock().unwrap());
+                            write_state_to_file(&state.database_path, &state.users.lock().unwrap());
                             res
                         })
                     })
@@ -87,14 +89,14 @@ pub fn start_server(graph: Graph) {
                     .route("/register", web::post().to(user::register)),
             )
     })
-    .bind("0.0.0.0:8000")
+    .bind(format!("0.0.0.0:{}", port))
     .expect("Can not bind to port 8000")
     .run()
     .expect("Could not start sever");
 }
 
-fn read_state_from_file() -> Option<Vec<UserState>> {
-    match File::open("database") {
+fn read_state_from_file(file_path: String) -> Option<Vec<UserState>> {
+    match File::open(file_path) {
         Ok(mut file) => {
             let mut content = String::new();
             file.read_to_string(&mut content)
@@ -110,8 +112,8 @@ fn read_state_from_file() -> Option<Vec<UserState>> {
     }
 }
 
-fn write_state_to_file(state: &[UserState]) {
-    let mut file = File::create("database").expect("Could not create file");
+fn write_state_to_file(file_path: &str, state: &[UserState]) {
+    let mut file = File::create(file_path).expect("Could not create file");
     let buffer = serde_json::to_vec(state).expect("Could not serialize state");
     file.write_all(&buffer)
         .expect("Could not write state to file");
