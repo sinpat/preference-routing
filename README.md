@@ -3,6 +3,13 @@
 # preference-routing
 Specification of Trajectories and Learning of User Preferences
 
+## Config
+The application requires a [config file](config.toml) to run.
+
+The file has to define the following properties:
+- **port**: The port which is used by the server
+- **database_path**: Used to save the application data
+
 ## Compile
 
 `cargo build --release`
