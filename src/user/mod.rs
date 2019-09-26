@@ -8,25 +8,30 @@ const INITIAL_PREF: Preference = [1.0, 0.0, 0.0];
 #[derive(Deserialize, Serialize)]
 pub struct UserState {
     pub auth: UserAuth,
-    pub driven_routes: Vec<Path>,
+    pub driven_routes: Vec<Vec<Path>>,
     pub current_route: Option<Path>,
-    pub alpha: Preference,
+    pub alphas: Vec<Preference>,
 }
 
 impl UserState {
     pub fn new(username: String, password: String) -> Self {
         UserState {
             auth: UserAuth::new(username, password),
-            driven_routes: Vec::new(),
+            driven_routes: vec![Vec::new()],
             current_route: None,
-            alpha: INITIAL_PREF,
+            alphas: vec![INITIAL_PREF],
         }
     }
 
+    pub fn add_pref(&mut self) {
+        self.driven_routes.push(Vec::new());
+        self.alphas.push(INITIAL_PREF);
+    }
+
     pub fn reset(&mut self) {
-        self.driven_routes = Vec::new();
+        self.driven_routes = vec![Vec::new()];
         self.current_route = None;
-        self.alpha = INITIAL_PREF;
+        self.alphas = vec![INITIAL_PREF];
     }
 }
 

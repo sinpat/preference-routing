@@ -1,17 +1,22 @@
 use actix_web::{web, HttpRequest, HttpResponse};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
 
 use super::AppState;
+use actix_web::web::Path;
 
-type FspRequest = Vec<Coordinate>;
+#[derive(Deserialize)]
+pub struct FspRequest {
+    waypoints: Vec<Coordinate>,
+    alpha: Preference,
+}
 
 #[derive(Serialize)]
-pub struct PrefResponse<'a> {
-    message: &'a str,
-    preference: Option<Preference>,
+pub struct PrefResponse {
+    message: String,
+    preference: Option<Vec<Preference>>,
 }
 
 pub fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
@@ -35,10 +40,9 @@ pub fn fsp(
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
-                    let waypoints = body.into_inner();
-                    let alpha = user.alpha;
+                    let data = body.into_inner();
 
-                    let path = state.graph.find_shortest_path(waypoints, alpha);
+                    let path = state.graph.find_shortest_path(data.waypoints, data.alpha);
                     user.current_route = Some(path.clone());
                     HttpResponse::Ok().json(path)
                 }
@@ -55,7 +59,7 @@ pub fn get_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpRespo
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
-                Some(user) => HttpResponse::Ok().json(user.alpha),
+                Some(user) => HttpResponse::Ok().json(&user.alphas),
             }
         }
     }
@@ -63,7 +67,7 @@ pub fn get_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpRespo
 
 pub fn set_preference(
     req: HttpRequest,
-    body: web::Json<Preference>,
+    body: web::Json<Vec<Preference>>,
     state: web::Data<AppState>,
 ) -> HttpResponse {
     match extract_token(&req) {
@@ -74,16 +78,37 @@ pub fn set_preference(
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
-                    let new_alpha = body.into_inner();
-                    user.alpha = new_alpha;
-                    HttpResponse::Ok().json(new_alpha)
+                    let new_alphas = body.into_inner();
+                    user.alphas = new_alphas;
+                    HttpResponse::Ok().finish()
                 }
             }
         }
     }
 }
 
-pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+pub fn new_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse {
+    match extract_token(&req) {
+        None => HttpResponse::Unauthorized().finish(),
+        Some(token) => {
+            let mut users = state.users.lock().unwrap();
+            let user_state = users.iter_mut().find(|x| x.auth.token == token);
+            match user_state {
+                None => HttpResponse::Unauthorized().finish(),
+                Some(user) => {
+                    user.add_pref();
+                    HttpResponse::Ok().json(&user.alphas)
+                }
+            }
+        }
+    }
+}
+
+pub fn find_preference(
+    req: HttpRequest,
+    state: web::Data<AppState>,
+    path_params: Path<usize>,
+) -> HttpResponse {
     match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
         Some(token) => {
@@ -93,30 +118,35 @@ pub fn find_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpResp
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
                     let graph = &state.graph;
-                    match user.current_route.clone() {
+                    match user.current_route {
                         None => HttpResponse::Ok().json(PrefResponse {
-                            message: "You first have to set a route! Keeping old preference",
+                            message: String::from("You first have to set a route! Keeping old preference"),
                             preference: None,
                         }),
-                        Some(route) => {
+                        Some(ref route) => {
+                            let index = path_params.into_inner();
                             let user_routes = &mut user.driven_routes;
-                            user_routes.push(route);
+                            user_routes[index].push(route.clone());
 
                             // Calculate new preference
                             let mut pref_estimator = PreferenceEstimator::new();
-                            match pref_estimator.get_preference(graph, user_routes, user.alpha) {
+                            match pref_estimator.get_preference(
+                                graph,
+                                &user_routes[index],
+                                user.alphas[index],
+                            ) {
                                 None => {
-                                    user_routes.pop();
+                                    user_routes[index].pop();
                                     HttpResponse::Ok().json(PrefResponse {
-                                        message: "No feasible preference found",
+                                        message: String::from("No feasible preference found"),
                                         preference: None,
                                     })
                                 }
                                 Some(new_pref) => {
-                                    user.alpha = new_pref;
+                                    user.alphas[index] = new_pref;
                                     HttpResponse::Ok().json(PrefResponse {
-                                        message: "",
-                                        preference: Some(new_pref),
+                                        message: String::new(),
+                                        preference: Some(user.alphas.clone()),
                                     })
                                 }
                             }

@@ -96,11 +96,12 @@ pub fn start_server(graph: Graph, port: String, database_path: String) {
             })
             */
             // routing stuff
-            .route("/closest", web::get().to(routing::find_closest))
-            .route("/fsp", web::post().to(routing::fsp))
             .route("/preference", web::get().to(routing::get_preference))
             .route("/preference", web::post().to(routing::set_preference))
-            .route("/find_preference", web::post().to(routing::find_preference))
+            .route("/preference/new", web::post().to(routing::new_preference))
+            .route("/preference/find/{index}", web::post().to(routing::find_preference))
+            .route("/closest", web::get().to(routing::find_closest))
+            .route("/fsp", web::post().to(routing::fsp))
             .route("/routes", web::get().to(routing::get_routes))
             .route("/reset", web::post().to(routing::reset_data))
 

@@ -129,10 +129,9 @@ impl Graph {
 
     fn unpack_edge(&self, edge: usize) -> Vec<usize> {
         if let Some((edge1, edge2)) = self.edges[edge].replaced_edges {
-            return vec![self.unpack_edge(edge1), self.unpack_edge(edge2)]
-                .into_iter()
-                .flatten()
-                .collect();
+            let mut first = self.unpack_edge(edge1);
+            first.extend(self.unpack_edge(edge2).iter());
+            return first;
         }
         vec![edge]
     }

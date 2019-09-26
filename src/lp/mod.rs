@@ -44,11 +44,11 @@ impl PreferenceEstimator {
         &mut self,
         graph: &Graph,
         driven_routes: &[Path],
-        alpha_in: Preference,
+        alpha: Preference,
     ) -> Option<Preference> {
-        let current_feasible = self.check_feasibility(graph, driven_routes, alpha_in);
+        let current_feasible = self.check_feasibility(graph, driven_routes, alpha);
         if current_feasible {
-            return Some(alpha_in);
+            return Some(alpha);
         }
         while let Some(alpha) = self.solve() {
             let feasible = self.check_feasibility(graph, driven_routes, alpha);
