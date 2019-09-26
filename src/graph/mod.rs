@@ -82,33 +82,36 @@ impl Graph {
         }
     }
 
-    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Path {
+    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Option<Path> {
         let include_ids: Vec<usize> = include
             .iter()
             .map(|x| self.find_closest_node(x).id)
             .collect();
-        let last_node = *include_ids.last().unwrap();
-        let result = dijkstra::find_path(self, include_ids, alpha);
 
-        let mut nodes: Vec<usize> = result
-            .edges
-            .iter()
-            .flat_map(|edge| self.unpack_edge(*edge))
-            .map(|edge| self.edges[edge].source_id)
-            .collect();
-        nodes.push(last_node);
+        match dijkstra::find_path(self, &include_ids, alpha) {
+            Some(result) => {
+                let mut nodes: Vec<usize> = result
+                    .edges
+                    .iter()
+                    .flat_map(|edge| self.unpack_edge(*edge))
+                    .map(|edge| self.edges[edge].source_id)
+                    .collect();
+                nodes.push(*include_ids.last().unwrap());
 
-        let coordinates = nodes
-            .iter()
-            .map(|id| self.nodes[*id].location.clone())
-            .collect();
+                let coordinates = nodes
+                    .iter()
+                    .map(|id| self.nodes[*id].location.clone())
+                    .collect();
 
-        Path {
-            nodes,
-            coordinates,
-            costs: result.costs,
-            alpha,
-            total_cost: result.total_cost,
+                Some(Path {
+                    nodes,
+                    coordinates,
+                    costs: result.costs,
+                    alpha,
+                    total_cost: result.total_cost,
+                })
+            }
+            None => None,
         }
     }
 

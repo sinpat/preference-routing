@@ -41,10 +41,9 @@ pub fn fsp(
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
                     let data = body.into_inner();
-
                     let path = state.graph.find_shortest_path(data.waypoints, data.alpha);
-                    user.current_route = Some(path.clone());
-                    HttpResponse::Ok().json(path)
+                    user.current_route = path;
+                    HttpResponse::Ok().json(&user.current_route)
                 }
             }
         }
@@ -120,7 +119,9 @@ pub fn find_preference(
                     let graph = &state.graph;
                     match user.current_route {
                         None => HttpResponse::Ok().json(PrefResponse {
-                            message: String::from("You first have to set a route! Keeping old preference"),
+                            message: String::from(
+                                "You first have to set a route! Keeping old preference",
+                            ),
                             preference: None,
                         }),
                         Some(ref route) => {

@@ -69,7 +69,9 @@ impl PreferenceEstimator {
         for route in driven_routes {
             let source = route.coordinates[0].clone();
             let target = route.coordinates[route.coordinates.len() - 1].clone();
-            let result = graph.find_shortest_path(vec![source, target], alpha);
+            let result = graph
+                .find_shortest_path(vec![source, target], alpha)
+                .unwrap();
             if route.nodes == result.nodes {
                 println!("Paths are equal, proceed with next route");
             } else if costs_by_alpha(route.costs, alpha) > result.total_cost {

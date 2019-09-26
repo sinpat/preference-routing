@@ -194,28 +194,33 @@ impl<'a> Dijkstra<'a> {
     }
 }
 
-pub fn find_path(graph: &Graph, include: Vec<usize>, alpha: Preference) -> DijkstraResult {
+pub fn find_path(graph: &Graph, include: &[usize], alpha: Preference) -> Option<DijkstraResult> {
     println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
     let mut edges = Vec::new();
     let mut costs = [0.0; EDGE_COST_DIMENSION];
     let mut total_cost = 0.0;
-    include.windows(2).for_each(|win| {
+
+    for win in include.windows(2) {
         if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
             edges.append(&mut result.edges);
             costs = add_edge_costs(costs, result.costs);
             total_cost += result.total_cost;
+        } else {
+            println!("=== Could not find a route ===");
+            return None;
         }
-    });
+    }
+
     println!(
         "=== Found path with costs: {:?} and total cost: {} ===",
         costs, total_cost
     );
-    DijkstraResult {
+    Some(DijkstraResult {
         edges,
         costs,
         total_cost,
-    }
+    })
 }
 
 #[cfg(test)]
