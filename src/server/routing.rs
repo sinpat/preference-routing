@@ -1,5 +1,5 @@
 use actix_web::{web, HttpRequest, HttpResponse};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
@@ -11,12 +11,6 @@ use actix_web::web::Path;
 pub struct FspRequest {
     waypoints: Vec<Coordinate>,
     alpha: Preference,
-}
-
-#[derive(Serialize)]
-pub struct PrefResponse {
-    message: String,
-    preference: Option<Vec<Preference>>,
 }
 
 pub fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
@@ -39,11 +33,10 @@ pub fn fsp(
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
-                Some(user) => {
+                Some(_) => {
                     let data = body.into_inner();
                     let path = state.graph.find_shortest_path(data.waypoints, data.alpha);
-                    user.current_route = path;
-                    HttpResponse::Ok().json(&user.current_route)
+                    HttpResponse::Ok().json(path)
                 }
             }
         }
@@ -107,6 +100,7 @@ pub fn find_preference(
     req: HttpRequest,
     state: web::Data<AppState>,
     path_params: Path<usize>,
+    body: web::Json<FspRequest>,
 ) -> HttpResponse {
     match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
@@ -116,43 +110,30 @@ pub fn find_preference(
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
+                    let body = body.into_inner();
                     let graph = &state.graph;
-                    match user.current_route {
-                        None => HttpResponse::Ok().json(PrefResponse {
-                            message: String::from(
-                                "You first have to set a route! Keeping old preference",
-                            ),
-                            preference: None,
-                        }),
-                        Some(ref route) => {
-                            let index = path_params.into_inner();
-                            let user_routes = &mut user.driven_routes;
-                            user_routes[index].push(route.clone());
+                    let route = graph.find_shortest_path(body.waypoints, body.alpha);
 
-                            // Calculate new preference
-                            let mut pref_estimator = PreferenceEstimator::new();
-                            match pref_estimator.get_preference(
-                                graph,
-                                &user_routes[index],
-                                user.alphas[index],
-                            ) {
-                                None => {
-                                    user_routes[index].pop();
-                                    HttpResponse::Ok().json(PrefResponse {
-                                        message: String::from("No feasible preference found"),
-                                        preference: None,
-                                    })
-                                }
-                                Some(new_pref) => {
-                                    user.alphas[index] = new_pref;
-                                    HttpResponse::Ok().json(PrefResponse {
-                                        message: String::new(),
-                                        preference: Some(user.alphas.clone()),
-                                    })
-                                }
-                            }
+                    let index = path_params.into_inner();
+                    let user_routes = &mut user.driven_routes;
+                    user_routes[index].push(route.unwrap());
+
+                    // Calculate new preference
+                    let mut pref_estimator = PreferenceEstimator::new();
+                    let new_pref = pref_estimator.get_preference(
+                        graph,
+                        &user_routes[index],
+                        user.alphas[index],
+                    );
+                    match new_pref {
+                        None => {
+                            user_routes[index].pop();
+                        }
+                        Some(new_pref) => {
+                            user.alphas[index] = new_pref;
                         }
                     }
+                    HttpResponse::Ok().json(new_pref)
                 }
             }
         }

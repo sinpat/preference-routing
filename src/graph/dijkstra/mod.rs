@@ -84,7 +84,9 @@ impl<'a> Dijkstra<'a> {
         self.prepare(source, target);
 
         let now = Instant::now();
+        let mut n_popped: usize = 0;
         while let Some(candidate) = self.candidates.pop() {
+            n_popped += 1;
             if self.found_best_f && self.found_best_b {
                 break;
             }
@@ -95,10 +97,10 @@ impl<'a> Dijkstra<'a> {
             (None, _, _) => None,
             (Some(node_id), costs, total_cost) => {
                 println!(
-                    "Found node {:?} with cost {:?} in {:?}ms",
-                    node_id,
+                    "Found path with cost {:?} in {:?}ms with {:?} nodes popped",
                     total_cost,
-                    now.elapsed().as_millis()
+                    now.elapsed().as_millis(),
+                    n_popped
                 );
                 let edges = self.make_edge_path(node_id);
                 Some(DijkstraResult {

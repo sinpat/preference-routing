@@ -9,7 +9,6 @@ const INITIAL_PREF: Preference = [1.0, 0.0, 0.0];
 pub struct UserState {
     pub auth: UserAuth,
     pub driven_routes: Vec<Vec<Path>>,
-    pub current_route: Option<Path>,
     pub alphas: Vec<Preference>,
 }
 
@@ -18,7 +17,6 @@ impl UserState {
         UserState {
             auth: UserAuth::new(username, password),
             driven_routes: vec![Vec::new()],
-            current_route: None,
             alphas: vec![INITIAL_PREF],
         }
     }
@@ -30,7 +28,6 @@ impl UserState {
 
     pub fn reset(&mut self) {
         self.driven_routes = vec![Vec::new()];
-        self.current_route = None;
         self.alphas = vec![INITIAL_PREF];
     }
 }
