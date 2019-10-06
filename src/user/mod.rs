@@ -42,14 +42,14 @@ pub struct UserAuth {
 impl UserAuth {
     pub fn new(username: String, password: String) -> Self {
         UserAuth {
-            token: Self::generate_token(&username),
+            token: String::new(),
             username,
             hash: Self::hash_password(&password),
         }
     }
 
     pub fn update_token(&mut self) -> String {
-        self.token = Self::generate_token(&self.username);
+        self.token = self.generate_token();
         self.token.to_string()
     }
 
@@ -58,8 +58,8 @@ impl UserAuth {
         self.username == username && self.hash == password_hash
     }
 
-    fn generate_token(username: &str) -> String {
-        String::from(username)
+    fn generate_token(&self) -> String {
+        String::from(&self.username)
     }
 
     fn hash_password(password: &str) -> Vec<u8> {

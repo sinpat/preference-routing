@@ -31,11 +31,10 @@ pub fn register(state: web::Data<AppState>, body: web::Json<Credentials>) -> Htt
     let mut users = state.users.lock().unwrap();
     let username_taken = users.iter().any(|x| x.auth.username == username);
     if username_taken {
-        return HttpResponse::Ok().finish();
+        return HttpResponse::Unauthorized().finish();
     }
     println!("Register user {}", username);
     let new_user = UserState::new(username, password);
-    let token = new_user.auth.token.clone();
     users.push(new_user);
-    HttpResponse::Ok().json(token)
+    HttpResponse::Ok().finish()
 }
