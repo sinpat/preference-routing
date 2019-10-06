@@ -96,6 +96,7 @@ pub fn start_server(graph: Graph, port: String, database_path: String) {
             })
             */
             // routing stuff
+            .route("/tags", web::get().to(routing::get_cost_tags))
             .route("/preference", web::get().to(routing::get_preference))
             .route("/preference", web::post().to(routing::set_preference))
             .route("/preference/new", web::post().to(routing::new_preference))

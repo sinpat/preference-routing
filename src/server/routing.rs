@@ -5,12 +5,17 @@ use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
 
 use super::AppState;
+use crate::EDGE_COST_TAGS;
 use actix_web::web::Path;
 
 #[derive(Deserialize)]
 pub struct FspRequest {
     waypoints: Vec<Coordinate>,
     alpha: Preference,
+}
+
+pub fn get_cost_tags() -> HttpResponse {
+    HttpResponse::Ok().json(EDGE_COST_TAGS)
 }
 
 pub fn find_closest(query: web::Query<Coordinate>, state: web::Data<AppState>) -> HttpResponse {
