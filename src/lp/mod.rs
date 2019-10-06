@@ -3,10 +3,11 @@ use lp_modeler::problem::{LpFileFormat, LpObjective, LpProblem};
 use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
+use crate::config::get_config;
 use crate::graph::Graph;
 use crate::graph::Path;
 use crate::helpers::{costs_by_alpha, Preference};
-use crate::{EDGE_COST_DIMENSION, EDGE_COST_TAGS};
+use crate::EDGE_COST_DIMENSION;
 
 // TODO: Remove this struct?
 pub struct PreferenceEstimator {
@@ -22,7 +23,7 @@ impl PreferenceEstimator {
 
         // Variables
         let mut variables = Vec::new();
-        for tag in &EDGE_COST_TAGS {
+        for tag in get_config().edge_cost_tags() {
             variables.push(LpContinuous::new(tag));
         }
         let deltas = Vec::new();
@@ -113,7 +114,7 @@ impl PreferenceEstimator {
                             all_zero = false;
                         }
                         // The order of variables in the HashMap is not fixed
-                        for (index, tag) in EDGE_COST_TAGS.iter().enumerate() {
+                        for (index, tag) in get_config().edge_cost_tags().iter().enumerate() {
                             if name == tag {
                                 alpha[index] = f64::from(*value);
                                 break;

@@ -7,6 +7,7 @@ use actix_web::dev::Service;
 use actix_web::{web, App, HttpServer};
 use futures::Future;
 
+use crate::config;
 use crate::graph::Graph;
 use crate::user::UserState;
 
@@ -23,9 +24,9 @@ pub struct AppState {
 }
 
 impl AppState {
-    fn new(graph: Graph, database_path: String) -> Self {
+    fn new(graph: Graph, database_path: &str) -> Self {
         println!("Reading user database...");
-        let users = match File::open(&database_path) {
+        let users = match File::open(database_path) {
             Ok(mut file) => {
                 let mut content = String::new();
                 file.read_to_string(&mut content)
@@ -45,7 +46,7 @@ impl AppState {
         };
         AppState {
             graph,
-            database_path,
+            database_path: String::from(database_path),
             users: Mutex::new(users),
         }
     }
@@ -58,8 +59,9 @@ impl AppState {
     }
 }
 
-pub fn start_server(graph: Graph, port: String, database_path: String) {
-    let state = web::Data::new(AppState::new(graph, database_path));
+pub fn start_server(graph: Graph) {
+    let config = config::get_config();
+    let state = web::Data::new(AppState::new(graph, config.database_path()));
     println!("Starting server");
     HttpServer::new(move || {
         App::new()
@@ -109,7 +111,7 @@ pub fn start_server(graph: Graph, port: String, database_path: String) {
             .route("/login", web::post().to(auth::login))
             .route("/register", web::post().to(auth::register))
     })
-    .bind(format!("0.0.0.0:{}", port))
+    .bind(format!("0.0.0.0:{}", config.port()))
     .expect("Can not bind to port 8000")
     .run()
     .expect("Could not start sever");
