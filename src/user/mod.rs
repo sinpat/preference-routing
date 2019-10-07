@@ -1,9 +1,8 @@
 use crate::graph::Path;
 use crate::helpers::Preference;
+use crate::INITIAL_PREF;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_512};
-
-const INITIAL_PREF: Preference = [1.0, 0.0, 0.0];
 
 #[derive(Deserialize, Serialize)]
 pub struct UserState {

@@ -1,3 +1,4 @@
+use crate::helpers::Preference;
 use serde::Deserialize;
 use std::env;
 use std::fs::File;
@@ -11,6 +12,7 @@ mod user;
 
 const EDGE_COST_DIMENSION: usize = 4;
 const EDGE_COST_TAGS: [&str; EDGE_COST_DIMENSION] = ["Distance", "Unit", "Height", "UnsuitDist"];
+const INITIAL_PREF: Preference = [0.0, 0.0, 0.0, 1.0];
 
 #[derive(Deserialize)]
 struct AppConfig {
