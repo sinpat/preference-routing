@@ -9,8 +9,8 @@ mod lp;
 mod server;
 mod user;
 
-const EDGE_COST_DIMENSION: usize = 3;
-const EDGE_COST_TAGS: [&str; EDGE_COST_DIMENSION] = ["Distance", "Height", "UnsuitDist"];
+const EDGE_COST_DIMENSION: usize = 4;
+const EDGE_COST_TAGS: [&str; EDGE_COST_DIMENSION] = ["Distance", "Unit", "Height", "UnsuitDist"];
 
 #[derive(Deserialize)]
 struct AppConfig {
