@@ -42,10 +42,10 @@ mod tests {
 
     #[test]
     fn test_add_edge_costs() {
-        let a = [1.5, 2.0, 0.7];
-        let b = [1.3, 0.1, 0.3];
+        let a = [1.5, 2.0, 0.7, 1.3];
+        let b = [1.3, 0.1, 0.3, 0.3];
         let result = add_edge_costs(a, b);
-        assert_eq!([2.8, 2.1, 1.0], result);
+        assert_eq!([2.8, 2.1, 1.0, 1.6], result);
     }
 
     #[test]

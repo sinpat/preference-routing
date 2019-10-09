@@ -257,7 +257,7 @@ mod tests {
         let conc_graph = get_conc_graph();
         let mut dijkstra = Dijkstra::new(&graph);
         let mut dijkstra_conc = Dijkstra::new(&conc_graph);
-        let alpha = [0.0, 1.0, 0.0];
+        let alpha = [0.0, 1.0, 0.0, 0.0];
 
         let mut shortest_path;
         let mut shortest_path_conc;
