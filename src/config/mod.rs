@@ -43,17 +43,11 @@ impl AppConfig {
     }
 }
 
-pub fn get_config() -> AppConfig {
-    AppConfig::new()
-}
-
-/*
 pub fn get_config() -> &'static AppConfig {
     unsafe {
         if INSTANCE.is_none() {
             INSTANCE = Some(AppConfig::new());
         }
-        &INSTANCE.unwrap()
+        INSTANCE.as_ref().unwrap()
     }
 }
-*/

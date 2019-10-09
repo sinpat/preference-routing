@@ -1,3 +1,3 @@
 port = "8000"
 database_path = "database"
-edge_cost_tags = ["Distance", "Height", "UnsuitDist"]
+edge_cost_tags = ["Distance", "Unit", "Height", "UnsuitDist"]
