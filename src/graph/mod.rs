@@ -16,6 +16,7 @@ mod node;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Path {
+    pub name: String,
     pub nodes: Vec<usize>,
     pub edges: Vec<usize>,
     pub coordinates: Vec<Coordinate>,
@@ -115,6 +116,7 @@ impl Graph {
                     .collect();
 
                 Some(Path {
+                    name: String::from("New Route"),
                     nodes,
                     edges,
                     coordinates,

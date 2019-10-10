@@ -7,7 +7,7 @@ use sha3::{Digest, Sha3_512};
 #[derive(Deserialize, Serialize)]
 pub struct UserState {
     pub auth: UserAuth,
-    pub driven_routes: Vec<Vec<Path>>,
+    pub driven_routes: Vec<Path>,
     pub alphas: Vec<Preference>,
 }
 
@@ -15,18 +15,20 @@ impl UserState {
     pub fn new(username: String, password: String) -> Self {
         UserState {
             auth: UserAuth::new(username, password),
-            driven_routes: vec![Vec::new()],
+            driven_routes: Vec::new(),
             alphas: vec![INITIAL_PREF],
         }
     }
 
+    /*
     pub fn add_pref(&mut self) {
         self.driven_routes.push(Vec::new());
         self.alphas.push(INITIAL_PREF);
     }
+    */
 
     pub fn reset(&mut self) {
-        self.driven_routes = vec![Vec::new()];
+        self.driven_routes = Vec::new();
         self.alphas = vec![INITIAL_PREF];
     }
 }

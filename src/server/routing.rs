@@ -95,7 +95,7 @@ pub fn new_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpRespo
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
-                    user.add_pref();
+                    // user.add_pref();
                     HttpResponse::Ok().json(&user.alphas)
                 }
             }
@@ -141,7 +141,8 @@ pub fn find_preference(
                         }
                     }
                     */
-                    let new_pref = lp::find_preference(graph, route, body.alpha);
+                    let new_pref = lp::find_preference(graph, &route, body.alpha);
+                    user.driven_routes.push(route);
                     HttpResponse::Ok().json(new_pref)
                 }
             }
