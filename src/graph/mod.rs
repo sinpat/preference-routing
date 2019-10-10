@@ -17,6 +17,7 @@ mod node;
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Path {
     pub nodes: Vec<usize>,
+    pub edges: Vec<usize>,
     pub coordinates: Vec<Coordinate>,
     pub costs: Costs,
     pub alpha: Preference,
@@ -82,21 +83,31 @@ impl Graph {
         }
     }
 
-    pub fn find_shortest_path(&self, include: Vec<Coordinate>, alpha: Preference) -> Option<Path> {
-        let include_ids: Vec<usize> = include
+    pub fn find_shortest_path_alt(
+        &self,
+        include: Vec<Coordinate>,
+        alpha: Preference,
+    ) -> Option<Path> {
+        let include = include
             .iter()
             .map(|x| self.find_closest_node(x).id)
             .collect();
+        self.find_shortest_path(include, alpha)
+    }
 
-        match dijkstra::find_path(self, &include_ids, alpha) {
+    pub fn find_shortest_path(&self, include: Vec<usize>, alpha: Preference) -> Option<Path> {
+        match dijkstra::find_path(self, &include, alpha) {
             Some(result) => {
-                let mut nodes: Vec<usize> = result
+                let edges: Vec<usize> = result
                     .edges
                     .iter()
                     .flat_map(|edge| self.unpack_edge(*edge))
-                    .map(|edge| self.edges[edge].source_id)
                     .collect();
-                nodes.push(*include_ids.last().unwrap());
+                let mut nodes: Vec<usize> = edges
+                    .iter()
+                    .map(|edge| self.edges[*edge].source_id)
+                    .collect();
+                nodes.push(*include.last().unwrap());
 
                 let coordinates = nodes
                     .iter()
@@ -105,6 +116,7 @@ impl Graph {
 
                 Some(Path {
                     nodes,
+                    edges,
                     coordinates,
                     costs: result.costs,
                     alpha,
