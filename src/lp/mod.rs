@@ -6,19 +6,19 @@ use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 use crate::config::get_config;
 use crate::graph::Graph;
 use crate::graph::Path;
-use crate::helpers::{costs_by_alpha, Preference};
+use crate::helpers::{add_edge_costs, costs_by_alpha, Preference};
 use crate::EDGE_COST_DIMENSION;
 
-// TODO: Remove this struct?
-pub struct PreferenceEstimator {
+pub struct PreferenceEstimator<'a> {
+    graph: &'a Graph,
     problem: LpProblem,
     variables: Vec<LpContinuous>,
     deltas: Vec<LpContinuous>,
     solver: GlpkSolver,
 }
 
-impl PreferenceEstimator {
-    pub fn new() -> Self {
+impl<'a> PreferenceEstimator<'a> {
+    pub fn new(graph: &'a Graph) -> Self {
         let mut problem = LpProblem::new("Find Preference", LpObjective::Maximize);
 
         // Variables
@@ -35,42 +35,98 @@ impl PreferenceEstimator {
         problem += lp_sum(&variables).equal(1);
 
         PreferenceEstimator {
+            graph,
             problem,
             variables,
             deltas,
             solver: GlpkSolver::new(),
         }
     }
-    pub fn get_preference(
+
+    /*
+    pub fn calc_preference(
         &mut self,
-        graph: &Graph,
         driven_routes: &[Path],
         alpha: Preference,
     ) -> Option<Preference> {
-        let current_feasible = self.check_feasibility(graph, driven_routes, alpha);
+        let current_feasible = self.check_feasibility(driven_routes, alpha);
         if current_feasible {
             return Some(alpha);
         }
-        while let Some(alpha) = self.solve() {
-            let feasible = self.check_feasibility(graph, driven_routes, alpha);
+        while let Some(alpha) = self.solve_lp() {
+            let feasible = self.check_feasibility(driven_routes, alpha);
             if feasible {
                 return Some(alpha);
             }
         }
         None
     }
+    */
 
-    fn check_feasibility(
-        &mut self,
-        graph: &Graph,
-        driven_routes: &[Path],
-        alpha: Preference,
-    ) -> bool {
+    fn calc_preference(&mut self, path: &Path, source: usize, target: usize) -> Option<Preference> {
+        let edges = &path.edges[source..target];
+        let costs = edges.iter().fold([0.0; EDGE_COST_DIMENSION], |acc, edge| {
+            add_edge_costs(acc, self.graph.edges[*edge].edge_costs)
+        });
+        // dbg!(source, target, costs);
+
+        // let mut alpha = [1.0 / EDGE_COST_DIMENSION as f64; EDGE_COST_DIMENSION];
+        let mut alpha = [0.0, 1.0, 0.0, 0.0];
+        loop {
+            let result = self
+                .graph
+                .find_shortest_path(vec![path.nodes[source], path.nodes[target]], alpha)
+                .unwrap();
+            // dbg!(&path.nodes, path.total_cost, &result.nodes, result.total_cost);
+            if &path.nodes[source..=target] == result.nodes.as_slice() {
+                // Catch case paths are equal, but have slightly different costs (precision issue)
+                println!("Paths are equal");
+                return Some(alpha);
+            } else if result.total_cost >= costs_by_alpha(costs, alpha) {
+                println!(
+                    "Shouldn't happen. result: {}, user path: {}",
+                    result.total_cost,
+                    costs_by_alpha(costs, alpha)
+                );
+                // return Some(alpha);
+            }
+            println!(
+                "Not explained, {} < {}",
+                result.total_cost,
+                costs_by_alpha(costs, alpha)
+            );
+            let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));
+            self.problem += new_delta.ge(0);
+            self.problem += new_delta.clone();
+            self.deltas.push(new_delta.clone());
+            self.problem += (0..EDGE_COST_DIMENSION)
+                .fold(LpExpression::ConsCont(new_delta), |acc, index| {
+                    acc + LpExpression::ConsCont(self.variables[index].clone())
+                        * ((costs[index] - result.costs[index]) as f32)
+                })
+                .le(0);
+
+            match self.solve_lp() {
+                Some(result) => {
+                    if result == alpha {
+                        println!("Solver returned same alpha");
+                        return Some(alpha);
+                    }
+                    alpha = result;
+                }
+                None => return None,
+            }
+        }
+    }
+
+    /*
+    fn check_feasibility(&mut self, driven_routes: &[Path], alpha: Preference) -> bool {
         let mut all_explained = true;
         for route in driven_routes {
-            let source = route.coordinates[0].clone();
-            let target = route.coordinates[route.coordinates.len() - 1].clone();
-            let result = graph
+            let source = route.nodes[0];
+            let target = route.nodes[route.nodes.len() - 1];
+            let result = self
+                .graph
                 .find_shortest_path(vec![source, target], alpha)
                 .unwrap();
             if route.nodes == result.nodes {
@@ -96,8 +152,9 @@ impl PreferenceEstimator {
         }
         all_explained
     }
+    */
 
-    fn solve(&self) -> Option<Preference> {
+    fn solve_lp(&self) -> Option<Preference> {
         self.problem
             .write_lp("lp_formulation")
             .expect("Could not write LP to file");
@@ -134,4 +191,65 @@ impl PreferenceEstimator {
             }
         }
     }
+}
+
+/*
+fn calc_preference(nodes: &[usize], _alpha: Preference) -> Option<bool> {
+    dbg!(nodes);
+    if nodes.len() <= 6 {
+        return Some(true);
+    }
+    None
+}
+*/
+
+pub fn find_preference(graph: &Graph, path: &Path) -> (Vec<Preference>, Vec<usize>) {
+    let path_length = path.nodes.len();
+    let mut preferences = Vec::new();
+    let mut cuts = Vec::new();
+    let mut start: usize = 0;
+    while start != path_length - 1 {
+        let mut low = start;
+        let mut high = path_length;
+        let mut best_pref = None;
+        let mut best_cut = 0;
+        loop {
+            let m = (low + high) / 2;
+            // dbg!(low, high, m);
+            let mut estimator = PreferenceEstimator::new(&graph);
+            let pref = estimator.calc_preference(&path, start, m);
+            if pref.is_some() {
+                low = m + 1;
+                best_pref = pref;
+                best_cut = m;
+            } else {
+                high = m;
+            }
+            if low == high {
+                // println!("Break");
+                preferences.push(best_pref);
+                cuts.push(best_cut);
+                break;
+            }
+        }
+        start = best_cut;
+    }
+    let preferences = preferences.iter().map(|pref| pref.unwrap()).collect();
+    (preferences, cuts)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /*
+    #[test]
+    fn test_path_splitting() {
+        let nodes = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let alpha = [0.0, 0.0, 0.0, 0.0];
+        let (prefs, cuts) = find_preference(nodes, alpha);
+        assert_eq!(prefs, [true, true]);
+        assert_eq!(cuts, [5, 9]);
+    }
+    */
 }

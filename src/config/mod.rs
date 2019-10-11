@@ -37,10 +37,6 @@ impl AppConfig {
     pub fn edge_cost_tags(&self) -> &[String] {
         &self.edge_cost_tags
     }
-
-    pub fn edge_cost_dim(&self) -> usize {
-        self.edge_cost_tags.len()
-    }
 }
 
 pub fn get_config() -> &'static AppConfig {

@@ -2,7 +2,7 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use serde::Deserialize;
 
 use crate::helpers::{Coordinate, Preference};
-use crate::lp::PreferenceEstimator;
+use crate::lp;
 
 use super::AppState;
 use crate::config::get_config;
@@ -40,7 +40,9 @@ pub fn fsp(
                 None => HttpResponse::Unauthorized().finish(),
                 Some(_) => {
                     let data = body.into_inner();
-                    let path = state.graph.find_shortest_path(data.waypoints, data.alpha);
+                    let path = state
+                        .graph
+                        .find_shortest_path_alt(data.waypoints, data.alpha);
                     HttpResponse::Ok().json(path)
                 }
             }
@@ -93,7 +95,7 @@ pub fn new_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpRespo
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
-                    user.add_pref();
+                    // user.add_pref();
                     HttpResponse::Ok().json(&user.alphas)
                 }
             }
@@ -104,7 +106,7 @@ pub fn new_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpRespo
 pub fn find_preference(
     req: HttpRequest,
     state: web::Data<AppState>,
-    path_params: Path<usize>,
+    _path_params: Path<usize>,
     body: web::Json<FspRequest>,
 ) -> HttpResponse {
     match extract_token(&req) {
@@ -117,19 +119,19 @@ pub fn find_preference(
                 Some(user) => {
                     let body = body.into_inner();
                     let graph = &state.graph;
-                    let route = graph.find_shortest_path(body.waypoints, body.alpha);
+                    let route = graph
+                        .find_shortest_path_alt(body.waypoints, body.alpha)
+                        .unwrap();
 
+                    /*
                     let index = path_params.into_inner();
                     let user_routes = &mut user.driven_routes;
                     user_routes[index].push(route.unwrap());
 
                     // Calculate new preference
-                    let mut pref_estimator = PreferenceEstimator::new();
-                    let new_pref = pref_estimator.get_preference(
-                        graph,
-                        &user_routes[index],
-                        user.alphas[index],
-                    );
+                    let mut pref_estimator = PreferenceEstimator::new(graph);
+                    let new_pref =
+                        pref_estimator.calc_preference(&user_routes[index], user.alphas[index]);
                     match new_pref {
                         None => {
                             user_routes[index].pop();
@@ -138,6 +140,9 @@ pub fn find_preference(
                             user.alphas[index] = new_pref;
                         }
                     }
+                    */
+                    let new_pref = lp::find_preference(graph, &route);
+                    user.driven_routes.push(route);
                     HttpResponse::Ok().json(new_pref)
                 }
             }
