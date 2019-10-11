@@ -141,7 +141,7 @@ pub fn find_preference(
                         }
                     }
                     */
-                    let new_pref = lp::find_preference(graph, &route, body.alpha);
+                    let new_pref = lp::find_preference(graph, &route);
                     user.driven_routes.push(route);
                     HttpResponse::Ok().json(new_pref)
                 }

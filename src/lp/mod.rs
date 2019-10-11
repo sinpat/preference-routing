@@ -63,34 +63,32 @@ impl<'a> PreferenceEstimator<'a> {
     }
     */
 
-    fn calc_preference(
-        &mut self,
-        path: &Path,
-        source: usize,
-        target: usize,
-        alpha: Preference,
-    ) -> Option<Preference> {
+    fn calc_preference(&mut self, path: &Path, source: usize, target: usize) -> Option<Preference> {
         let edges = &path.edges[source..target];
         let costs = edges.iter().fold([0.0; EDGE_COST_DIMENSION], |acc, edge| {
             add_edge_costs(acc, self.graph.edges[*edge].edge_costs)
         });
-        dbg!(source, target, edges, costs);
+        // dbg!(source, target, costs);
 
-        let mut alpha = alpha;
-        // while let Some(alpha) = self.solve_lp() {
+        // let mut alpha = [1.0 / EDGE_COST_DIMENSION as f64; EDGE_COST_DIMENSION];
+        let mut alpha = [0.0, 1.0, 0.0, 0.0];
         loop {
             let result = self
                 .graph
                 .find_shortest_path(vec![path.nodes[source], path.nodes[target]], alpha)
                 .unwrap();
-            dbg!(&path.nodes, path.total_cost, &result.nodes, result.total_cost);
+            // dbg!(&path.nodes, path.total_cost, &result.nodes, result.total_cost);
             if &path.nodes[source..=target] == result.nodes.as_slice() {
                 // Catch case paths are equal, but have slightly different costs (precision issue)
                 println!("Paths are equal");
                 return Some(alpha);
             } else if result.total_cost >= costs_by_alpha(costs, alpha) {
-                return Some(alpha);
-                // } else if result.total_cost < costs_by_alpha(costs, alpha) {
+                println!(
+                    "Shouldn't happen. result: {}, user path: {}",
+                    result.total_cost,
+                    costs_by_alpha(costs, alpha)
+                );
+                // return Some(alpha);
             }
             println!(
                 "Not explained, {} < {}",
@@ -109,7 +107,13 @@ impl<'a> PreferenceEstimator<'a> {
                 .le(0);
 
             match self.solve_lp() {
-                Some(result) => alpha = result,
+                Some(result) => {
+                    if result == alpha {
+                        println!("Solver returned same alpha");
+                        return Some(alpha);
+                    }
+                    alpha = result;
+                }
                 None => return None,
             }
         }
@@ -199,11 +203,7 @@ fn calc_preference(nodes: &[usize], _alpha: Preference) -> Option<bool> {
 }
 */
 
-pub fn find_preference(
-    graph: &Graph,
-    path: &Path,
-    alpha: Preference,
-) -> (Vec<Preference>, Vec<usize>) {
+pub fn find_preference(graph: &Graph, path: &Path) -> (Vec<Preference>, Vec<usize>) {
     let path_length = path.nodes.len();
     let mut preferences = Vec::new();
     let mut cuts = Vec::new();
@@ -217,7 +217,7 @@ pub fn find_preference(
             let m = (low + high) / 2;
             // dbg!(low, high, m);
             let mut estimator = PreferenceEstimator::new(&graph);
-            let pref = estimator.calc_preference(&path, start, m, alpha);
+            let pref = estimator.calc_preference(&path, start, m);
             if pref.is_some() {
                 low = m + 1;
                 best_pref = pref;
