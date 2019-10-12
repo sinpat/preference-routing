@@ -106,7 +106,6 @@ pub fn new_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpRespo
 pub fn find_preference(
     req: HttpRequest,
     state: web::Data<AppState>,
-    _path_params: Path<usize>,
     body: web::Json<FspRequest>,
 ) -> HttpResponse {
     match extract_token(&req) {
@@ -119,7 +118,7 @@ pub fn find_preference(
                 Some(user) => {
                     let body = body.into_inner();
                     let graph = &state.graph;
-                    let route = graph
+                    let mut route = graph
                         .find_shortest_path_alt(body.waypoints, body.alpha)
                         .unwrap();
 
@@ -142,8 +141,10 @@ pub fn find_preference(
                     }
                     */
                     let new_pref = lp::find_preference(graph, &route);
-                    user.driven_routes.push(route);
-                    HttpResponse::Ok().json(new_pref)
+                    route.preference = new_pref.0;
+                    route.splits = new_pref.1;
+                    user.driven_routes.push(route.clone());
+                    HttpResponse::Ok().json(route)
                 }
             }
         }

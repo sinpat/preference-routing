@@ -22,7 +22,7 @@ pub fn add_edge_costs(a: Costs, b: Costs) -> Costs {
     result
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct Coordinate {
     pub lat: f64,
     pub lng: f64,

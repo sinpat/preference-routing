@@ -1,4 +1,4 @@
-use crate::graph::Path;
+use crate::graph::path::Path;
 use crate::helpers::Preference;
 use crate::INITIAL_PREF;
 use serde::{Deserialize, Serialize};

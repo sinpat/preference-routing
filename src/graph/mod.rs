@@ -2,28 +2,17 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-use serde::{Deserialize, Serialize};
-
 use edge::{Edge, HalfEdge};
 use node::Node;
+use path::Path;
 
-use crate::helpers::{Coordinate, Costs, Preference};
+use crate::helpers::{Coordinate, Preference};
 use crate::EDGE_COST_DIMENSION;
 
 mod dijkstra;
 mod edge;
 mod node;
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Path {
-    pub name: String,
-    pub nodes: Vec<usize>,
-    pub edges: Vec<usize>,
-    pub coordinates: Vec<Coordinate>,
-    pub costs: Costs,
-    pub alpha: Preference,
-    pub total_cost: f64,
-}
+pub mod path;
 
 #[derive(Debug)]
 pub struct Graph {
@@ -110,19 +99,21 @@ impl Graph {
                     .collect();
                 nodes.push(*include.last().unwrap());
 
-                let coordinates = nodes
-                    .iter()
-                    .map(|id| self.nodes[*id].location.clone())
-                    .collect();
+                let coordinates = nodes.iter().map(|id| self.nodes[*id].location).collect();
+
+                let waypoints = include.iter().map(|x| self.nodes[*x].location).collect();
 
                 Some(Path {
                     name: String::from("New Route"),
+                    initial_waypoints: waypoints,
                     nodes,
                     edges,
                     coordinates,
-                    costs: result.costs,
-                    alpha,
-                    total_cost: result.total_cost,
+                    splits: Vec::new(),
+                    preference: Vec::new(),
+                    dim_costs: result.costs,
+                    initial_pref: alpha,
+                    costs_by_alpha: result.total_cost,
                 })
             }
             None => None,

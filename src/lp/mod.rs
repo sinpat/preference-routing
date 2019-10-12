@@ -4,12 +4,12 @@ use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
 use crate::config::get_config;
+use crate::graph::path::Path;
 use crate::graph::Graph;
-use crate::graph::Path;
 use crate::helpers::{add_edge_costs, costs_by_alpha, Preference};
 use crate::EDGE_COST_DIMENSION;
 
-pub struct PreferenceEstimator<'a> {
+struct PreferenceEstimator<'a> {
     graph: &'a Graph,
     problem: LpProblem,
     variables: Vec<LpContinuous>,
@@ -18,7 +18,7 @@ pub struct PreferenceEstimator<'a> {
 }
 
 impl<'a> PreferenceEstimator<'a> {
-    pub fn new(graph: &'a Graph) -> Self {
+    fn new(graph: &'a Graph) -> Self {
         let mut problem = LpProblem::new("Find Preference", LpObjective::Maximize);
 
         // Variables
@@ -82,17 +82,17 @@ impl<'a> PreferenceEstimator<'a> {
                 // Catch case paths are equal, but have slightly different costs (precision issue)
                 println!("Paths are equal");
                 return Some(alpha);
-            } else if result.total_cost >= costs_by_alpha(costs, alpha) {
+            } else if result.costs_by_alpha >= costs_by_alpha(costs, alpha) {
                 println!(
                     "Shouldn't happen. result: {}, user path: {}",
-                    result.total_cost,
+                    result.costs_by_alpha,
                     costs_by_alpha(costs, alpha)
                 );
                 // return Some(alpha);
             }
             println!(
                 "Not explained, {} < {}",
-                result.total_cost,
+                result.costs_by_alpha,
                 costs_by_alpha(costs, alpha)
             );
             let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));
@@ -102,7 +102,7 @@ impl<'a> PreferenceEstimator<'a> {
             self.problem += (0..EDGE_COST_DIMENSION)
                 .fold(LpExpression::ConsCont(new_delta), |acc, index| {
                     acc + LpExpression::ConsCont(self.variables[index].clone())
-                        * ((costs[index] - result.costs[index]) as f32)
+                        * ((costs[index] - result.dim_costs[index]) as f32)
                 })
                 .le(0);
 
