@@ -6,6 +6,7 @@ mod graph;
 mod helpers;
 mod lp;
 mod server;
+mod test;
 mod user;
 
 const EDGE_COST_DIMENSION: usize = 4;

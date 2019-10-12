@@ -9,7 +9,7 @@ use crate::graph::Path;
 use crate::helpers::{add_edge_costs, costs_by_alpha, Preference};
 use crate::EDGE_COST_DIMENSION;
 
-pub struct PreferenceEstimator<'a> {
+struct PreferenceEstimator<'a> {
     graph: &'a Graph,
     problem: LpProblem,
     variables: Vec<LpContinuous>,
@@ -18,7 +18,7 @@ pub struct PreferenceEstimator<'a> {
 }
 
 impl<'a> PreferenceEstimator<'a> {
-    pub fn new(graph: &'a Graph) -> Self {
+    fn new(graph: &'a Graph) -> Self {
         let mut problem = LpProblem::new("Find Preference", LpObjective::Maximize);
 
         // Variables
@@ -44,7 +44,7 @@ impl<'a> PreferenceEstimator<'a> {
     }
 
     /*
-    pub fn calc_preference(
+    fn calc_preference(
         &mut self,
         driven_routes: &[Path],
         alpha: Preference,
