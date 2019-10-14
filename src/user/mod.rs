@@ -8,6 +8,7 @@ use sha3::{Digest, Sha3_512};
 pub struct UserState {
     pub auth: UserAuth,
     pub driven_routes: Vec<Path>,
+    pub counter: usize,
     pub alphas: Vec<Preference>,
 }
 
@@ -16,8 +17,17 @@ impl UserState {
         UserState {
             auth: UserAuth::new(username, password),
             driven_routes: Vec::new(),
+            counter: 1,
             alphas: vec![INITIAL_PREF],
         }
+    }
+
+    pub fn add_route(&mut self, mut route: Path) -> Path {
+        route.id = self.counter;
+        route.name = format!("Route {}", self.counter);
+        self.driven_routes.push(route.clone());
+        self.counter += 1;
+        return route
     }
 
     /*

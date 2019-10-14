@@ -2,11 +2,9 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use serde::Deserialize;
 
 use crate::helpers::{Coordinate, Preference};
-use crate::lp;
 
 use super::AppState;
 use crate::config::get_config;
-use actix_web::web::Path;
 
 #[derive(Deserialize)]
 pub struct FspRequest {
@@ -140,10 +138,8 @@ pub fn find_preference(
                         }
                     }
                     */
-                    let new_pref = lp::find_preference(graph, &route);
-                    route.preference = new_pref.0;
-                    route.splits = new_pref.1;
-                    user.driven_routes.push(route.clone());
+                    graph.find_preference(&mut route);
+                    route = user.add_route(route);
                     HttpResponse::Ok().json(route)
                 }
             }

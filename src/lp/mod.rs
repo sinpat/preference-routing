@@ -9,7 +9,7 @@ use crate::graph::Graph;
 use crate::helpers::{add_edge_costs, costs_by_alpha, Preference};
 use crate::EDGE_COST_DIMENSION;
 
-struct PreferenceEstimator<'a> {
+pub struct PreferenceEstimator<'a> {
     graph: &'a Graph,
     problem: LpProblem,
     variables: Vec<LpContinuous>,
@@ -18,7 +18,7 @@ struct PreferenceEstimator<'a> {
 }
 
 impl<'a> PreferenceEstimator<'a> {
-    fn new(graph: &'a Graph) -> Self {
+    pub fn new(graph: &'a Graph) -> Self {
         let mut problem = LpProblem::new("Find Preference", LpObjective::Maximize);
 
         // Variables
@@ -63,15 +63,16 @@ impl<'a> PreferenceEstimator<'a> {
     }
     */
 
-    fn calc_preference(&mut self, path: &Path, source: usize, target: usize) -> Option<Preference> {
+    pub fn calc_preference(&mut self, path: &Path, source: usize, target: usize) -> Option<Preference> {
         let edges = &path.edges[source..target];
         let costs = edges.iter().fold([0.0; EDGE_COST_DIMENSION], |acc, edge| {
             add_edge_costs(acc, self.graph.edges[*edge].edge_costs)
         });
         // dbg!(source, target, costs);
 
-        // let mut alpha = [1.0 / EDGE_COST_DIMENSION as f64; EDGE_COST_DIMENSION];
-        let mut alpha = [0.0, 1.0, 0.0, 0.0];
+        // vielleicht einfach nur dist maximieren, oder alle
+        let mut alpha = [1.0 / EDGE_COST_DIMENSION as f64; EDGE_COST_DIMENSION];
+        //let mut alpha = [0.0, 1.0, 0.0, 0.0];
         loop {
             let result = self
                 .graph
@@ -203,6 +204,7 @@ fn calc_preference(nodes: &[usize], _alpha: Preference) -> Option<bool> {
 }
 */
 
+/*
 pub fn find_preference(graph: &Graph, path: &Path) -> (Vec<Preference>, Vec<usize>) {
     let path_length = path.nodes.len();
     let mut preferences = Vec::new();
@@ -237,6 +239,7 @@ pub fn find_preference(graph: &Graph, path: &Path) -> (Vec<Preference>, Vec<usiz
     let preferences = preferences.iter().map(|pref| pref.unwrap()).collect();
     (preferences, cuts)
 }
+*/
 
 #[cfg(test)]
 mod tests {

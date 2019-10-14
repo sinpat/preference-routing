@@ -8,6 +8,7 @@ use path::Path;
 
 use crate::helpers::{Coordinate, Preference};
 use crate::EDGE_COST_DIMENSION;
+use crate::lp::PreferenceEstimator;
 
 mod dijkstra;
 mod edge;
@@ -104,6 +105,7 @@ impl Graph {
                 let waypoints = include.iter().map(|x| self.nodes[*x].location).collect();
 
                 Some(Path {
+                    id: 0,
                     name: String::from("New Route"),
                     initial_waypoints: waypoints,
                     nodes,
@@ -118,6 +120,42 @@ impl Graph {
             }
             None => None,
         }
+    }
+
+    pub fn find_preference(&self, path: &mut Path) {
+        let path_length = path.nodes.len();
+        let mut preferences = Vec::new();
+        let mut cuts = Vec::new();
+        let mut start: usize = 0;
+        while start != path_length - 1 {
+            let mut low = start;
+            let mut high = path_length;
+            let mut best_pref = None;
+            let mut best_cut = 0;
+            loop {
+                let m = (low + high) / 2;
+                // dbg!(low, high, m);
+                let mut estimator = PreferenceEstimator::new(self);
+                let pref = estimator.calc_preference(&path, start, m);
+                if pref.is_some() {
+                    low = m + 1;
+                    best_pref = pref;
+                    best_cut = m;
+                } else {
+                    high = m;
+                }
+                if low == high {
+                    // println!("Break");
+                    preferences.push(best_pref);
+                    cuts.push(best_cut);
+                    break;
+                }
+            }
+            start = best_cut;
+        }
+        let preferences = preferences.iter().map(|pref| pref.unwrap()).collect();
+        path.preference = preferences;
+        path.splits = cuts;
     }
 
     pub fn find_closest_node(&self, point: &Coordinate) -> &Node {
