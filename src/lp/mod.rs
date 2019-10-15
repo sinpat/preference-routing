@@ -1,12 +1,12 @@
 use lp_modeler::operations::LpOperations;
-use lp_modeler::problem::{LpFileFormat, LpObjective, LpProblem};
+use lp_modeler::problem::{LpObjective, LpProblem};
 use lp_modeler::solvers::{GlpkSolver, SolverTrait};
 use lp_modeler::variables::{lp_sum, LpContinuous, LpExpression};
 
 use crate::config::get_config;
 use crate::graph::path::Path;
 use crate::graph::Graph;
-use crate::helpers::{add_edge_costs, costs_by_alpha, Preference};
+use crate::helpers::{costs_by_alpha, Preference};
 use crate::EDGE_COST_DIMENSION;
 
 pub struct PreferenceEstimator<'a> {
@@ -63,39 +63,37 @@ impl<'a> PreferenceEstimator<'a> {
     }
     */
 
-    pub fn calc_preference(&mut self, path: &Path, source: usize, target: usize) -> Option<Preference> {
-        let edges = &path.edges[source..target];
-        let costs = edges.iter().fold([0.0; EDGE_COST_DIMENSION], |acc, edge| {
-            add_edge_costs(acc, self.graph.edges[*edge].edge_costs)
-        });
-        // dbg!(source, target, costs);
+    pub fn calc_preference(
+        &mut self,
+        path: &Path,
+        source: usize,
+        target: usize,
+    ) -> Option<Preference> {
+        let costs = path.get_subpath_costs(self.graph, source, target);
 
-        // vielleicht einfach nur dist maximieren, oder alle
         let mut alpha = [1.0 / EDGE_COST_DIMENSION as f64; EDGE_COST_DIMENSION];
-        //let mut alpha = [0.0, 1.0, 0.0, 0.0];
         loop {
             let result = self
                 .graph
                 .find_shortest_path(vec![path.nodes[source], path.nodes[target]], alpha)
                 .unwrap();
-            // dbg!(&path.nodes, path.total_cost, &result.nodes, result.total_cost);
             if &path.nodes[source..=target] == result.nodes.as_slice() {
                 // Catch case paths are equal, but have slightly different costs (precision issue)
-                println!("Paths are equal");
                 return Some(alpha);
-            } else if result.costs_by_alpha >= costs_by_alpha(costs, alpha) {
+            } else if result.user_split.get_total_cost() >= costs_by_alpha(costs, alpha) {
                 println!(
-                    "Shouldn't happen. result: {}, user path: {}",
-                    result.costs_by_alpha,
+                    "LP: Shouldn't happen. result: {:?}, user path: {:?}",
+                    result.user_split.get_total_cost(),
                     costs_by_alpha(costs, alpha)
                 );
-                // return Some(alpha);
             }
+            /*
             println!(
-                "Not explained, {} < {}",
-                result.costs_by_alpha,
+                "Not explained, {:?} < {:?}",
+                result.user_split.costs_by_alpha,
                 costs_by_alpha(costs, alpha)
             );
+            */
             let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));
             self.problem += new_delta.ge(0);
             self.problem += new_delta.clone();
@@ -103,14 +101,14 @@ impl<'a> PreferenceEstimator<'a> {
             self.problem += (0..EDGE_COST_DIMENSION)
                 .fold(LpExpression::ConsCont(new_delta), |acc, index| {
                     acc + LpExpression::ConsCont(self.variables[index].clone())
-                        * ((costs[index] - result.dim_costs[index]) as f32)
+                        * ((costs[index] - result.user_split.get_total_dimension_costs()[index])
+                            as f32)
                 })
                 .le(0);
 
             match self.solve_lp() {
                 Some(result) => {
                     if result == alpha {
-                        println!("Solver returned same alpha");
                         return Some(alpha);
                     }
                     alpha = result;
@@ -156,18 +154,18 @@ impl<'a> PreferenceEstimator<'a> {
     */
 
     fn solve_lp(&self) -> Option<Preference> {
+        /*
         self.problem
             .write_lp("lp_formulation")
             .expect("Could not write LP to file");
+        */
         match self.solver.run(&self.problem) {
-            Ok((status, var_values)) => {
-                println!("Solver Status: {:?}", status);
+            Ok((_status, var_values)) => {
+                // println!("Solver Status: {:?}", status);
                 let mut alpha = [0.0; EDGE_COST_DIMENSION];
                 let mut all_zero = true;
                 for (name, value) in var_values.iter() {
-                    if name.contains("delta") {
-                        println!("{}: {}", name, value);
-                    } else {
+                    if !name.contains("delta") {
                         if *value != 0.0 {
                             all_zero = false;
                         }
@@ -180,7 +178,7 @@ impl<'a> PreferenceEstimator<'a> {
                         }
                     }
                 }
-                println!("Alpha: {:?}", alpha);
+                // println!("Alpha: {:?}", alpha);
                 if all_zero {
                     return None;
                 }

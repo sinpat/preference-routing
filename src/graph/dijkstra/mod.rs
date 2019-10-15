@@ -1,5 +1,4 @@
 use std::collections::binary_heap::BinaryHeap;
-use std::time::Instant;
 
 use state::Direction::{BACKWARD, FORWARD};
 use state::State;
@@ -9,6 +8,12 @@ use crate::helpers::{add_edge_costs, costs_by_alpha, Costs, Preference};
 use crate::EDGE_COST_DIMENSION;
 
 mod state;
+
+pub struct HalfPath {
+    pub edges: Vec<Vec<usize>>,
+    pub dimension_costs: Vec<Costs>,
+    pub costs_by_alpha: Vec<f64>,
+}
 
 pub struct DijkstraResult {
     pub edges: Vec<usize>,
@@ -83,10 +88,10 @@ impl<'a> Dijkstra<'a> {
     fn run(&mut self, source: usize, target: usize, alpha: Preference) -> Option<DijkstraResult> {
         self.prepare(source, target);
 
-        let now = Instant::now();
-        let mut n_popped: usize = 0;
+        // let now = Instant::now();
+        // let mut n_popped: usize = 0;
         while let Some(candidate) = self.candidates.pop() {
-            n_popped += 1;
+            // n_popped += 1;
             if self.found_best_f && self.found_best_b {
                 break;
             }
@@ -96,12 +101,14 @@ impl<'a> Dijkstra<'a> {
         match self.best_node {
             (None, _, _) => None,
             (Some(node_id), costs, total_cost) => {
+                /*
                 println!(
                     "Found path with cost {:?} in {:?}ms with {:?} nodes popped",
                     total_cost,
                     now.elapsed().as_millis(),
                     n_popped
                 );
+                */
                 let edges = self.make_edge_path(node_id);
                 Some(DijkstraResult {
                     edges,
@@ -196,32 +203,30 @@ impl<'a> Dijkstra<'a> {
     }
 }
 
-pub fn find_path(graph: &Graph, include: &[usize], alpha: Preference) -> Option<DijkstraResult> {
-    println!("=== Running Dijkstra search ===");
+pub fn find_path(graph: &Graph, include: &[usize], alpha: Preference) -> Option<HalfPath> {
+    // println!("=== Running Dijkstra search ===");
     let mut dijkstra = Dijkstra::new(graph);
     let mut edges = Vec::new();
-    let mut costs = [0.0; EDGE_COST_DIMENSION];
-    let mut total_cost = 0.0;
+    let mut dimension_costs = Vec::new();
+    let mut costs_by_alpha = Vec::new();
 
     for win in include.windows(2) {
-        if let Some(mut result) = dijkstra.run(win[0], win[1], alpha) {
-            edges.append(&mut result.edges);
-            costs = add_edge_costs(costs, result.costs);
-            total_cost += result.total_cost;
+        if let Some(result) = dijkstra.run(win[0], win[1], alpha) {
+            // edges.append(&mut result.edges);
+            edges.push(result.edges);
+            dimension_costs.push(result.costs);
+            costs_by_alpha.push(result.total_cost);
         } else {
-            println!("=== Could not find a route ===");
+            println!("=== Dijkstra could not find a route ===");
             return None;
         }
     }
 
-    println!(
-        "=== Found path with costs: {:?} and total cost: {} ===",
-        costs, total_cost
-    );
-    Some(DijkstraResult {
+    // println!("=== Found path with costs: {:?} ===", costs_by_alpha);
+    Some(HalfPath {
         edges,
-        costs,
-        total_cost,
+        dimension_costs,
+        costs_by_alpha,
     })
 }
 

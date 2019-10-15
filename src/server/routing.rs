@@ -139,7 +139,7 @@ pub fn find_preference(
                     }
                     */
                     graph.find_preference(&mut route);
-                    route = user.add_route(route);
+                    user.add_route(route.clone());
                     HttpResponse::Ok().json(route)
                 }
             }

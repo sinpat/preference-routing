@@ -6,9 +6,10 @@ use edge::{Edge, HalfEdge};
 use node::Node;
 use path::Path;
 
+use crate::graph::path::PathSplit;
 use crate::helpers::{Coordinate, Preference};
-use crate::EDGE_COST_DIMENSION;
 use crate::lp::PreferenceEstimator;
+use crate::EDGE_COST_DIMENSION;
 
 mod dijkstra;
 mod edge;
@@ -87,45 +88,53 @@ impl Graph {
     }
 
     pub fn find_shortest_path(&self, include: Vec<usize>, alpha: Preference) -> Option<Path> {
-        match dijkstra::find_path(self, &include, alpha) {
-            Some(result) => {
-                let edges: Vec<usize> = result
-                    .edges
-                    .iter()
-                    .flat_map(|edge| self.unpack_edge(*edge))
-                    .collect();
-                let mut nodes: Vec<usize> = edges
-                    .iter()
-                    .map(|edge| self.edges[*edge].source_id)
-                    .collect();
-                nodes.push(*include.last().unwrap());
-
-                let coordinates = nodes.iter().map(|id| self.nodes[*id].location).collect();
-
-                let waypoints = include.iter().map(|x| self.nodes[*x].location).collect();
-
-                Some(Path {
-                    id: 0,
-                    name: String::from("New Route"),
-                    initial_waypoints: waypoints,
-                    nodes,
-                    edges,
-                    coordinates,
-                    splits: Vec::new(),
-                    preference: Vec::new(),
-                    dim_costs: result.costs,
-                    initial_pref: alpha,
-                    costs_by_alpha: result.total_cost,
+        if let Some(result) = dijkstra::find_path(self, &include, alpha) {
+            let unpacked_edges: Vec<Vec<usize>> = result
+                .edges
+                .iter()
+                .map(|subpath_edges| {
+                    subpath_edges
+                        .iter()
+                        .flat_map(|edge| self.unpack_edge(*edge))
+                        .collect()
                 })
-            }
-            None => None,
+                .collect();
+            let cuts = unpacked_edges.iter().map(|edges| edges.len()).collect();
+
+            let edges: Vec<usize> = unpacked_edges.into_iter().flatten().collect();
+            let mut nodes: Vec<usize> = edges
+                .iter()
+                .map(|edge| self.edges[*edge].source_id)
+                .collect();
+            nodes.push(*include.last().unwrap());
+
+            let coordinates = nodes.iter().map(|id| self.nodes[*id].location).collect();
+            let waypoints = include.iter().map(|id| self.nodes[*id].location).collect();
+
+            return Some(Path {
+                id: 0,
+                name: String::from("New Route"),
+                nodes,
+                edges,
+                coordinates,
+                waypoints,
+                user_split: PathSplit {
+                    cuts,
+                    alphas: vec![alpha],
+                    dimension_costs: result.dimension_costs,
+                    costs_by_alpha: result.costs_by_alpha,
+                },
+                algo_split: None,
+            });
         }
+        None
     }
 
     pub fn find_preference(&self, path: &mut Path) {
+        println!("=== Calculate Preference ===");
         let path_length = path.nodes.len();
-        let mut preferences = Vec::new();
         let mut cuts = Vec::new();
+        let mut alphas = Vec::new();
         let mut start: usize = 0;
         while start != path_length - 1 {
             let mut low = start;
@@ -134,7 +143,6 @@ impl Graph {
             let mut best_cut = 0;
             loop {
                 let m = (low + high) / 2;
-                // dbg!(low, high, m);
                 let mut estimator = PreferenceEstimator::new(self);
                 let pref = estimator.calc_preference(&path, start, m);
                 if pref.is_some() {
@@ -145,17 +153,22 @@ impl Graph {
                     high = m;
                 }
                 if low == high {
-                    // println!("Break");
-                    preferences.push(best_pref);
+                    alphas.push(best_pref.unwrap());
                     cuts.push(best_cut);
                     break;
                 }
             }
             start = best_cut;
         }
-        let preferences = preferences.iter().map(|pref| pref.unwrap()).collect();
-        path.preference = preferences;
-        path.splits = cuts;
+        let dimension_costs = Vec::new();
+        let costs_by_alpha = Vec::new();
+        path.algo_split = Some(PathSplit {
+            cuts,
+            alphas,
+            dimension_costs,
+            costs_by_alpha,
+        });
+        println!("=== Found Preference ===");
     }
 
     pub fn find_closest_node(&self, point: &Coordinate) -> &Node {

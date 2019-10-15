@@ -22,12 +22,11 @@ impl UserState {
         }
     }
 
-    pub fn add_route(&mut self, mut route: Path) -> Path {
+    pub fn add_route(&mut self, mut route: Path) {
         route.id = self.counter;
         route.name = format!("Route {}", self.counter);
         self.driven_routes.push(route.clone());
         self.counter += 1;
-        return route
     }
 
     /*
