@@ -22,7 +22,7 @@ impl UserState {
         }
     }
 
-    pub fn add_route(&mut self, mut route: Path) {
+    pub fn add_route(&mut self, route: &mut Path) {
         route.id = self.counter;
         route.name = format!("Route {}", self.counter);
         self.driven_routes.push(route.clone());
@@ -45,36 +45,34 @@ impl UserState {
 #[derive(Deserialize, Serialize)]
 pub struct UserAuth {
     pub username: String,
-    hash: Vec<u8>,
+    hash: String,
     pub token: String,
 }
 
 impl UserAuth {
     pub fn new(username: String, password: String) -> Self {
         UserAuth {
-            token: String::new(),
+            token: Self::hash_value(&username),
             username,
-            hash: Self::hash_password(&password),
+            hash: Self::hash_value(&password),
         }
     }
 
-    pub fn update_token(&mut self) -> String {
-        self.token = self.generate_token();
-        self.token.to_string()
-    }
-
     pub fn credentials_valid(&self, username: &str, password: &str) -> bool {
-        let password_hash = Self::hash_password(password);
+        let password_hash = Self::hash_value(password);
         self.username == username && self.hash == password_hash
     }
 
-    fn generate_token(&self) -> String {
-        String::from(&self.username)
-    }
-
-    fn hash_password(password: &str) -> Vec<u8> {
+    fn hash_value(value: &str) -> String {
         let mut hasher = Sha3_512::new();
-        hasher.input(password);
-        hasher.result().to_vec()
+        hasher.input(value);
+        hasher
+            .result()
+            .to_vec()
+            .iter()
+            .fold(String::new(), |mut acc, val| {
+                acc.push_str(&val.to_string());
+                acc
+            })
     }
 }

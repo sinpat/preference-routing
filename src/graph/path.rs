@@ -17,13 +17,6 @@ impl PathSplit {
             .iter()
             .fold(0.0, |acc, cost| acc + *cost)
     }
-    pub fn get_total_dimension_costs(&self) -> [f64; EDGE_COST_DIMENSION] {
-        self.dimension_costs
-            .iter()
-            .fold([0.0; EDGE_COST_DIMENSION], |acc, costs| {
-                add_edge_costs(acc, *costs)
-            })
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -36,14 +29,7 @@ pub struct Path {
     pub coordinates: Vec<Coordinate>,
     pub user_split: PathSplit,
     pub algo_split: Option<PathSplit>,
-    /*
-    pub splits: Vec<usize>,
-    pub preference: Vec<Preference>,
-    pub dim_costs: Costs,
-    pub initial_waypoints: Vec<Coordinate>,
-    pub initial_pref: Preference,
-    pub costs_by_alpha: f64,
-    */
+    pub total_dimension_costs: Costs,
 }
 
 impl Path {

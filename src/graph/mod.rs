@@ -125,6 +125,7 @@ impl Graph {
                     costs_by_alpha: result.costs_by_alpha,
                 },
                 algo_split: None,
+                total_dimension_costs: result.total_dimension_costs,
             });
         }
         None

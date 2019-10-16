@@ -101,8 +101,7 @@ impl<'a> PreferenceEstimator<'a> {
             self.problem += (0..EDGE_COST_DIMENSION)
                 .fold(LpExpression::ConsCont(new_delta), |acc, index| {
                     acc + LpExpression::ConsCont(self.variables[index].clone())
-                        * ((costs[index] - result.user_split.get_total_dimension_costs()[index])
-                            as f32)
+                        * ((costs[index] - result.total_dimension_costs[index]) as f32)
                 })
                 .le(0);
 

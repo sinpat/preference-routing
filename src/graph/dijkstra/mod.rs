@@ -12,6 +12,7 @@ mod state;
 pub struct HalfPath {
     pub edges: Vec<Vec<usize>>,
     pub dimension_costs: Vec<Costs>,
+    pub total_dimension_costs: Costs,
     pub costs_by_alpha: Vec<f64>,
 }
 
@@ -208,12 +209,17 @@ pub fn find_path(graph: &Graph, include: &[usize], alpha: Preference) -> Option<
     let mut dijkstra = Dijkstra::new(graph);
     let mut edges = Vec::new();
     let mut dimension_costs = Vec::new();
+    let mut total_dimension_costs = [0.0; EDGE_COST_DIMENSION];
     let mut costs_by_alpha = Vec::new();
 
     for win in include.windows(2) {
         if let Some(result) = dijkstra.run(win[0], win[1], alpha) {
-            // edges.append(&mut result.edges);
             edges.push(result.edges);
+            result
+                .costs
+                .iter()
+                .enumerate()
+                .for_each(|(index, val)| total_dimension_costs[index] += *val);
             dimension_costs.push(result.costs);
             costs_by_alpha.push(result.total_cost);
         } else {
@@ -221,11 +227,11 @@ pub fn find_path(graph: &Graph, include: &[usize], alpha: Preference) -> Option<
             return None;
         }
     }
-
     // println!("=== Found path with costs: {:?} ===", costs_by_alpha);
     Some(HalfPath {
         edges,
         dimension_costs,
+        total_dimension_costs,
         costs_by_alpha,
     })
 }

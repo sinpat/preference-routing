@@ -139,7 +139,7 @@ pub fn find_preference(
                     }
                     */
                     graph.find_preference(&mut route);
-                    user.add_route(route.clone());
+                    user.add_route(&mut route);
                     HttpResponse::Ok().json(route)
                 }
             }
@@ -185,6 +185,12 @@ fn extract_token(req: &HttpRequest) -> Option<&str> {
     let auth_header = req.headers().get("Authorization");
     match auth_header {
         None => None,
-        Some(value) => Some(value.to_str().unwrap()),
+        Some(value) => {
+            let value = value.to_str().unwrap();
+            if value.is_empty() {
+                return None;
+            }
+            Some(value)
+        }
     }
 }

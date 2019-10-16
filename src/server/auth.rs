@@ -20,8 +20,7 @@ pub fn login(state: web::Data<AppState>, body: web::Json<Credentials>) -> HttpRe
         None => HttpResponse::Unauthorized().finish(),
         Some(state) => {
             println!("Login user {}", username);
-            let token = state.auth.update_token();
-            HttpResponse::Ok().json(token)
+            HttpResponse::Ok().json(&state.auth.token)
         }
     }
 }
