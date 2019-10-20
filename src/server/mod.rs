@@ -106,6 +106,7 @@ pub fn start_server(graph: Graph) {
             .route("/closest", web::get().to(routing::find_closest))
             .route("/fsp", web::post().to(routing::fsp))
             .route("/routes", web::get().to(routing::get_routes))
+            .route("/delete/{id}", web::post().to(routing::delete_route))
             .route("/reset", web::post().to(routing::reset_data))
 
             // auth stuff

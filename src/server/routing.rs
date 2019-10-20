@@ -5,6 +5,7 @@ use crate::helpers::{Coordinate, Preference};
 
 use super::AppState;
 use crate::config::get_config;
+use actix_web::web::Path;
 
 #[derive(Deserialize)]
 pub struct FspRequest {
@@ -150,6 +151,24 @@ pub fn get_routes(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse 
                 Some(user) => {
                     let routes = &user.driven_routes;
                     HttpResponse::Ok().json(routes)
+                }
+            }
+        }
+    }
+}
+
+pub fn delete_route(req: HttpRequest, path: Path<usize>, state: web::Data<AppState>) -> HttpResponse {
+    match extract_token(&req) {
+        None => HttpResponse::Unauthorized().finish(),
+        Some(token) => {
+            let mut users = state.users.lock().unwrap();
+            let user_state = users.iter_mut().find(|x| x.auth.token == token);
+            match user_state {
+                None => HttpResponse::Unauthorized().finish(),
+                Some(user) => {
+                    let id = path.into_inner();
+                    user.delete_route(id);
+                    HttpResponse::Ok().json(&user.driven_routes)
                 }
             }
         }

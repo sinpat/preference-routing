@@ -40,6 +40,13 @@ impl UserState {
         }
     }
 
+    pub fn delete_route(&mut self, id: usize) {
+        let index = self.driven_routes.iter().position(|path| path.id == id);
+        if let Some(index) = index {
+            self.driven_routes.remove(index);
+        }
+    }
+
     pub fn add_pref(&mut self) {
         self.alphas.push(INITIAL_PREF);
     }
