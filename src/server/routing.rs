@@ -8,6 +8,7 @@ use crate::config::get_config;
 
 #[derive(Deserialize)]
 pub struct FspRequest {
+    id: usize,
     waypoints: Vec<Coordinate>,
     alpha: Preference,
 }
@@ -36,11 +37,15 @@ pub fn fsp(
             let user_state = users.iter_mut().find(|x| x.auth.token == token);
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
-                Some(_) => {
+                Some(user) => {
                     let data = body.into_inner();
+                    let id = data.id;
                     let path = state
                         .graph
-                        .find_shortest_path_alt(data.waypoints, data.alpha);
+                        .find_shortest_path_alt(id, data.waypoints, data.alpha);
+                    if id != 0 {
+                        user.update_route(path.as_ref());
+                    }
                     HttpResponse::Ok().json(path)
                 }
             }
@@ -115,14 +120,19 @@ pub fn find_preference(
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
                     let body = body.into_inner();
+                    let id = body.id;
                     let graph = &state.graph;
                     let mut route = graph
-                        .find_shortest_path_alt(body.waypoints, body.alpha)
+                        .find_shortest_path_alt(id, body.waypoints, body.alpha)
                         .unwrap();
 
                     graph.find_preference(&mut route);
-                    user.add_route(&mut route);
-                    HttpResponse::Ok().json(route)
+                    if id == 0 {
+                        user.add_route(&mut route);
+                    } else {
+                        user.update_route(Some(&route));
+                    }
+                    HttpResponse::Ok().json(&user.driven_routes)
                 }
             }
         }

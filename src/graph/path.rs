@@ -22,7 +22,6 @@ impl PathSplit {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Path {
     pub id: usize,
-    pub name: String,
     pub nodes: Vec<usize>,
     pub edges: Vec<usize>,
     pub waypoints: Vec<Coordinate>,

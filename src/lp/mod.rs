@@ -75,7 +75,11 @@ impl<'a> PreferenceEstimator<'a> {
         loop {
             let result = self
                 .graph
-                .find_shortest_path(vec![path.nodes[source_idx], path.nodes[target_idx]], alpha)
+                .find_shortest_path(
+                    0,
+                    vec![path.nodes[source_idx], path.nodes[target_idx]],
+                    alpha,
+                )
                 .unwrap();
             if &path.nodes[source_idx..=target_idx] == result.nodes.as_slice() {
                 // Catch case paths are equal, but have slightly different costs (precision issue)

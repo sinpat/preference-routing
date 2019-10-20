@@ -24,9 +24,20 @@ impl UserState {
 
     pub fn add_route(&mut self, route: &mut Path) {
         route.id = self.counter;
-        route.name = format!("Route {}", self.counter);
         self.driven_routes.push(route.clone());
         self.counter += 1;
+    }
+
+    pub fn update_route(&mut self, route: Option<&Path>) {
+        if let Some(route) = route {
+            let idx = self
+                .driven_routes
+                .iter()
+                .position(|path| path.id == route.id);
+            if let Some(idx) = idx {
+                self.driven_routes[idx] = route.clone();
+            }
+        }
     }
 
     /*

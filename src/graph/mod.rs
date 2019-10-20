@@ -77,6 +77,7 @@ impl Graph {
 
     pub fn find_shortest_path_alt(
         &self,
+        id: usize,
         include: Vec<Coordinate>,
         alpha: Preference,
     ) -> Option<Path> {
@@ -84,10 +85,15 @@ impl Graph {
             .iter()
             .map(|x| self.find_closest_node(x).id)
             .collect();
-        self.find_shortest_path(include, alpha)
+        self.find_shortest_path(id, include, alpha)
     }
 
-    pub fn find_shortest_path(&self, include: Vec<usize>, alpha: Preference) -> Option<Path> {
+    pub fn find_shortest_path(
+        &self,
+        id: usize,
+        include: Vec<usize>,
+        alpha: Preference,
+    ) -> Option<Path> {
         if let Some(result) = dijkstra::find_path(self, &include, alpha) {
             let unpacked_edges: Vec<Vec<usize>> = result
                 .edges
@@ -112,8 +118,7 @@ impl Graph {
             let waypoints = include.iter().map(|id| self.nodes[*id].location).collect();
 
             return Some(Path {
-                id: 0,
-                name: String::from("New Route"),
+                id,
                 nodes,
                 edges,
                 coordinates,
