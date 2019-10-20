@@ -98,7 +98,7 @@ pub fn new_preference(req: HttpRequest, state: web::Data<AppState>) -> HttpRespo
             match user_state {
                 None => HttpResponse::Unauthorized().finish(),
                 Some(user) => {
-                    // user.add_pref();
+                    user.add_pref();
                     HttpResponse::Ok().json(&user.alphas)
                 }
             }

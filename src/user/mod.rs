@@ -40,12 +40,9 @@ impl UserState {
         }
     }
 
-    /*
     pub fn add_pref(&mut self) {
-        self.driven_routes.push(Vec::new());
         self.alphas.push(INITIAL_PREF);
     }
-    */
 
     pub fn reset(&mut self) {
         self.driven_routes = Vec::new();
