@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
 use super::AppState;
-use crate::server::UserState;
+use crate::user::UserState;
 
 #[derive(Deserialize)]
 pub struct Credentials {

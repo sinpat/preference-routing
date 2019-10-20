@@ -120,24 +120,6 @@ pub fn find_preference(
                         .find_shortest_path_alt(body.waypoints, body.alpha)
                         .unwrap();
 
-                    /*
-                    let index = path_params.into_inner();
-                    let user_routes = &mut user.driven_routes;
-                    user_routes[index].push(route.unwrap());
-
-                    // Calculate new preference
-                    let mut pref_estimator = PreferenceEstimator::new(graph);
-                    let new_pref =
-                        pref_estimator.calc_preference(&user_routes[index], user.alphas[index]);
-                    match new_pref {
-                        None => {
-                            user_routes[index].pop();
-                        }
-                        Some(new_pref) => {
-                            user.alphas[index] = new_pref;
-                        }
-                    }
-                    */
                     graph.find_preference(&mut route);
                     user.add_route(&mut route);
                     HttpResponse::Ok().json(route)

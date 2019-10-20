@@ -66,26 +66,23 @@ impl<'a> PreferenceEstimator<'a> {
     pub fn calc_preference(
         &mut self,
         path: &Path,
-        source: usize,
-        target: usize,
+        source_idx: usize,
+        target_idx: usize,
     ) -> Option<Preference> {
-        let costs = path.get_subpath_costs(self.graph, source, target);
+        let costs = path.get_subpath_costs(self.graph, source_idx, target_idx);
 
         let mut alpha = [1.0 / EDGE_COST_DIMENSION as f64; EDGE_COST_DIMENSION];
         loop {
             let result = self
                 .graph
-                .find_shortest_path(vec![path.nodes[source], path.nodes[target]], alpha)
+                .find_shortest_path(vec![path.nodes[source_idx], path.nodes[target_idx]], alpha)
                 .unwrap();
-            if &path.nodes[source..=target] == result.nodes.as_slice() {
+            if &path.nodes[source_idx..=target_idx] == result.nodes.as_slice() {
                 // Catch case paths are equal, but have slightly different costs (precision issue)
                 return Some(alpha);
             } else if result.user_split.get_total_cost() >= costs_by_alpha(costs, alpha) {
-                println!(
-                    "LP: Shouldn't happen. result: {:?}, user path: {:?}",
-                    result.user_split.get_total_cost(),
-                    costs_by_alpha(costs, alpha)
-                );
+                println!("Shouldn't happen");
+                dbg!(&costs, &result.total_dimension_costs, &alpha);
             }
             /*
             println!(
