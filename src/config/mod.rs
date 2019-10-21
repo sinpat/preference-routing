@@ -1,3 +1,4 @@
+use crate::helpers::Preference;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Read;
@@ -9,6 +10,7 @@ pub struct AppConfig {
     port: String,
     database_path: String,
     edge_cost_tags: Vec<String>,
+    initial_pref: Preference,
 }
 
 impl AppConfig {
@@ -36,6 +38,10 @@ impl AppConfig {
 
     pub fn edge_cost_tags(&self) -> &[String] {
         &self.edge_cost_tags
+    }
+
+    pub fn initial_pref(&self) -> Preference {
+        self.initial_pref
     }
 }
 

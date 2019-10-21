@@ -1,4 +1,3 @@
-use crate::helpers::Preference;
 use std::env;
 
 mod config;
@@ -9,7 +8,6 @@ mod server;
 mod user;
 
 const EDGE_COST_DIMENSION: usize = 4;
-const INITIAL_PREF: Preference = [1.0, 0.0, 0.0, 0.0];
 
 fn main() {
     let args: Vec<String> = env::args().collect();

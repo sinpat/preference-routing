@@ -1,6 +1,6 @@
+use crate::config::get_config;
 use crate::graph::path::Path;
 use crate::helpers::Preference;
-use crate::INITIAL_PREF;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_512};
 
@@ -18,7 +18,7 @@ impl UserState {
             auth: UserAuth::new(username, password),
             driven_routes: Vec::new(),
             counter: 1,
-            alphas: vec![INITIAL_PREF],
+            alphas: vec![get_config().initial_pref()],
         }
     }
 
@@ -48,12 +48,12 @@ impl UserState {
     }
 
     pub fn add_pref(&mut self) {
-        self.alphas.push(INITIAL_PREF);
+        self.alphas.push(get_config().initial_pref());
     }
 
     pub fn reset(&mut self) {
         self.driven_routes = Vec::new();
-        self.alphas = vec![INITIAL_PREF];
+        self.alphas = vec![get_config().initial_pref()];
     }
 }
 

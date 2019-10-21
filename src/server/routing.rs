@@ -157,7 +157,11 @@ pub fn get_routes(req: HttpRequest, state: web::Data<AppState>) -> HttpResponse 
     }
 }
 
-pub fn delete_route(req: HttpRequest, path: Path<usize>, state: web::Data<AppState>) -> HttpResponse {
+pub fn delete_route(
+    req: HttpRequest,
+    path: Path<usize>,
+    state: web::Data<AppState>,
+) -> HttpResponse {
     match extract_token(&req) {
         None => HttpResponse::Unauthorized().finish(),
         Some(token) => {
