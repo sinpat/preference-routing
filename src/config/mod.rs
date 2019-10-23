@@ -14,7 +14,7 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    pub fn new() -> Self {
+    fn new() -> Self {
         match File::open("config.toml") {
             Ok(mut file) => {
                 let mut file_content = String::new();

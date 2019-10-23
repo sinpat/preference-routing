@@ -33,9 +33,9 @@ struct Dijkstra<'a> {
     pub cost_f: Vec<(Costs, f64)>,
     pub cost_b: Vec<(Costs, f64)>,
 
-    // Best (node, edge) to/from node
-    pub previous_f: Vec<Option<(usize, usize)>>,
-    pub previous_b: Vec<Option<(usize, usize)>>,
+    // Best edge to/from node
+    pub previous_f: Vec<Option<usize>>,
+    pub previous_b: Vec<Option<usize>>,
 
     // (node_id, cost array, total_cost)
     best_node: (Option<usize>, Costs, f64),
@@ -175,7 +175,7 @@ impl<'a> Dijkstra<'a> {
 
             if next_total_cost < my_costs[next_node].1 {
                 my_costs[next_node] = (next_costs, next_total_cost);
-                previous[next_node] = Some((node_id, half_edge.edge_id));
+                previous[next_node] = Some(half_edge.edge_id);
                 self.touched_nodes.push(next_node);
                 self.candidates.push(State {
                     node_id: next_node,
@@ -189,20 +189,20 @@ impl<'a> Dijkstra<'a> {
 
     fn make_edge_path(&self, connector: usize) -> Vec<usize> {
         let mut edges = Vec::new();
-        let mut previous_state = self.previous_f[connector];
-        let mut successive_state = self.previous_b[connector];
+        let mut previous_edge = self.previous_f[connector];
+        let mut successive_edge = self.previous_b[connector];
 
         // backwards
-        while let Some((previous_node, edge_id)) = previous_state {
+        while let Some(edge_id) = previous_edge {
             edges.push(edge_id);
-            previous_state = self.previous_f[previous_node];
+            previous_edge = self.previous_f[self.graph.edges[edge_id].source_id];
         }
         edges.reverse();
 
         // forwards
-        while let Some((successive_node, edge_id)) = successive_state {
+        while let Some(edge_id) = successive_edge {
             edges.push(edge_id);
-            successive_state = self.previous_b[successive_node];
+            successive_edge = self.previous_b[self.graph.edges[edge_id].target_id];
         }
         edges
     }

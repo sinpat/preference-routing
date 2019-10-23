@@ -20,8 +20,8 @@ pub mod path;
 pub struct Graph {
     pub nodes: Vec<Node>,
     pub edges: Vec<Edge>,
-    pub offsets_in: Vec<usize>,
-    pub offsets_out: Vec<usize>,
+    offsets_in: Vec<usize>,
+    offsets_out: Vec<usize>,
     half_edges_in: Vec<HalfEdge>,
     half_edges_out: Vec<HalfEdge>,
 }
