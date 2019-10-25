@@ -84,7 +84,7 @@ impl<'a> PreferenceEstimator<'a> {
             if &path.nodes[source_idx..=target_idx] == result.nodes.as_slice() {
                 // Catch case paths are equal, but have slightly different costs (precision issue)
                 return Some(alpha);
-            } else if result.user_split.get_total_cost() >= costs_by_alpha(costs, alpha) {
+            } else if result.user_split.get_total_cost() > costs_by_alpha(costs, alpha) {
                 println!(
                     "Shouldn't happen: result: {:?}; user: {:?}",
                     result.user_split.get_total_cost(),
@@ -92,13 +92,6 @@ impl<'a> PreferenceEstimator<'a> {
                 );
                 dbg!(&costs, &result.total_dimension_costs, &alpha);
             }
-            /*
-            println!(
-                "Not explained, {:?} < {:?}",
-                result.user_split.costs_by_alpha,
-                costs_by_alpha(costs, alpha)
-            );
-            */
             let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));
             self.problem += new_delta.ge(0);
             self.problem += new_delta.clone();
@@ -196,65 +189,7 @@ impl<'a> PreferenceEstimator<'a> {
     }
 }
 
-/*
-fn calc_preference(nodes: &[usize], _alpha: Preference) -> Option<bool> {
-    dbg!(nodes);
-    if nodes.len() <= 6 {
-        return Some(true);
-    }
-    None
-}
-*/
-
-/*
-pub fn find_preference(graph: &Graph, path: &Path) -> (Vec<Preference>, Vec<usize>) {
-    let path_length = path.nodes.len();
-    let mut preferences = Vec::new();
-    let mut cuts = Vec::new();
-    let mut start: usize = 0;
-    while start != path_length - 1 {
-        let mut low = start;
-        let mut high = path_length;
-        let mut best_pref = None;
-        let mut best_cut = 0;
-        loop {
-            let m = (low + high) / 2;
-            // dbg!(low, high, m);
-            let mut estimator = PreferenceEstimator::new(&graph);
-            let pref = estimator.calc_preference(&path, start, m);
-            if pref.is_some() {
-                low = m + 1;
-                best_pref = pref;
-                best_cut = m;
-            } else {
-                high = m;
-            }
-            if low == high {
-                // println!("Break");
-                preferences.push(best_pref);
-                cuts.push(best_cut);
-                break;
-            }
-        }
-        start = best_cut;
-    }
-    let preferences = preferences.iter().map(|pref| pref.unwrap()).collect();
-    (preferences, cuts)
-}
-*/
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /*
-    #[test]
-    fn test_path_splitting() {
-        let nodes = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let alpha = [0.0, 0.0, 0.0, 0.0];
-        let (prefs, cuts) = find_preference(nodes, alpha);
-        assert_eq!(prefs, [true, true]);
-        assert_eq!(cuts, [5, 9]);
-    }
-    */
 }
