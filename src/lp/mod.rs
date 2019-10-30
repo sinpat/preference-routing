@@ -7,7 +7,8 @@ use crate::config::get_config;
 use crate::graph::path::Path;
 use crate::graph::Graph;
 use crate::helpers::{costs_by_alpha, Preference};
-use crate::EDGE_COST_DIMENSION;
+use crate::{RuntimeTracker, EDGE_COST_DIMENSION};
+use std::time::Instant;
 
 pub struct PreferenceEstimator<'a> {
     graph: &'a Graph,
@@ -68,11 +69,15 @@ impl<'a> PreferenceEstimator<'a> {
         path: &Path,
         source_idx: usize,
         target_idx: usize,
+        results: &mut RuntimeTracker,
     ) -> Option<Preference> {
+        let now = Instant::now();
+        let mut n_lp_solves = 0;
         let costs = path.get_subpath_costs(self.graph, source_idx, target_idx);
 
         let mut alpha = [1.0 / EDGE_COST_DIMENSION as f64; EDGE_COST_DIMENSION];
         loop {
+            let dijkstra_start = Instant::now();
             let result = self
                 .graph
                 .find_shortest_path(
@@ -81,16 +86,34 @@ impl<'a> PreferenceEstimator<'a> {
                     alpha,
                 )
                 .unwrap();
+            results
+                .dijkstra_times
+                .push(dijkstra_start.elapsed().as_millis());
             if &path.nodes[source_idx..=target_idx] == result.nodes.as_slice() {
                 // Catch case paths are equal, but have slightly different costs (precision issue)
+                results.calc_pref_times.push(now.elapsed().as_millis());
+                results.n_lp_solves.push(n_lp_solves);
                 return Some(alpha);
+            /*
+            return (
+                Some(alpha),
+                CalcPrefTracker {
+                    total_time: now.elapsed().as_millis(),
+                    n_dijkstras,
+                    n_lp_solves,
+                    n_added_constraints,
+                },
+            );
+            */
             } else if result.user_split.get_total_cost() > costs_by_alpha(costs, alpha) {
+                /*
                 println!(
                     "Shouldn't happen: result: {:?}; user: {:?}",
                     result.user_split.get_total_cost(),
                     costs_by_alpha(costs, alpha)
                 );
                 dbg!(&costs, &result.total_dimension_costs, &alpha);
+                */
             }
             let new_delta = LpContinuous::new(&format!("delta{}", self.deltas.len()));
             self.problem += new_delta.ge(0);
@@ -103,14 +126,50 @@ impl<'a> PreferenceEstimator<'a> {
                 })
                 .le(0);
 
+            n_lp_solves += 1;
+            let lp_solve_start = Instant::now();
             match self.solve_lp() {
                 Some(result) => {
+                    results
+                        .lp_solve_times
+                        .push(lp_solve_start.elapsed().as_millis());
                     if result == alpha {
+                        results.calc_pref_times.push(now.elapsed().as_millis());
+                        results.n_lp_solves.push(n_lp_solves);
                         return Some(alpha);
+                        /*
+                        return (
+                            Some(alpha),
+                            CalcPrefTracker {
+                                total_time: now.elapsed().as_millis(),
+                                n_dijkstras,
+                                n_lp_solves,
+                                n_added_constraints,
+                            },
+                        );
+                        */
                     }
                     alpha = result;
                 }
-                None => return None,
+                None => {
+                    results
+                        .lp_solve_times
+                        .push(lp_solve_start.elapsed().as_millis());
+                    results.calc_pref_times.push(now.elapsed().as_millis());
+                    results.n_lp_solves.push(n_lp_solves);
+                    return None;
+                    /*
+                    return (
+                        None,
+                        CalcPrefTracker {
+                            total_time: now.elapsed().as_millis(),
+                            n_dijkstras,
+                            n_lp_solves,
+                            n_added_constraints,
+                        },
+                    )
+                    */
+                }
             }
         }
     }

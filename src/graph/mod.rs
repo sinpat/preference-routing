@@ -9,7 +9,8 @@ use path::Path;
 use crate::graph::path::PathSplit;
 use crate::helpers::{Coordinate, Preference};
 use crate::lp::PreferenceEstimator;
-use crate::EDGE_COST_DIMENSION;
+use crate::{RuntimeTracker, EDGE_COST_DIMENSION};
+use std::time::Instant;
 
 mod dijkstra;
 mod edge;
@@ -136,13 +137,17 @@ impl Graph {
         None
     }
 
-    pub fn find_preference(&self, path: &mut Path) {
+    pub fn find_preference(&self, path: &mut Path, results: &mut RuntimeTracker, route_idx: usize) {
         println!("=== Calculate Preference ===");
+        // let now = Instant::now();
+        // let mut subpaths = Vec::new();
         let path_length = path.nodes.len();
         let mut cuts = Vec::new();
         let mut alphas = Vec::new();
         let mut start: usize = 0;
         while start != path_length - 1 {
+            let now = Instant::now();
+            let mut n_iterations = 0;
             let mut low = start;
             let mut high = path_length;
             let mut best_pref = None;
@@ -150,7 +155,10 @@ impl Graph {
             loop {
                 let m = (low + high) / 2;
                 let mut estimator = PreferenceEstimator::new(self);
-                let pref = estimator.calc_preference(&path, start, m);
+                // let (pref, tracker) = estimator.calc_preference(&path, start, m, results);
+                let pref = estimator.calc_preference(&path, start, m, results);
+                n_iterations += 1;
+                // iterations.push(tracker);
                 if pref.is_some() {
                     low = m + 1;
                     best_pref = pref;
@@ -165,6 +173,14 @@ impl Graph {
                 }
             }
             start = best_cut;
+            results.subpath_times[route_idx].push(now.elapsed().as_secs());
+            results.n_calc_pref.push(n_iterations);
+            /*
+            subpaths.push(SubpathTracker {
+                total_time: now.elapsed().as_secs(),
+                iterations,
+            })
+            */
         }
         let dimension_costs = Vec::new();
         let costs_by_alpha = Vec::new();
@@ -174,7 +190,14 @@ impl Graph {
             dimension_costs,
             costs_by_alpha,
         });
+
         println!("=== Found Preference ===");
+        /*
+        RuntimeTracker {
+            total_time: now.elapsed().as_secs(),
+            subpaths,
+        }
+        */
     }
 
     pub fn find_closest_node(&self, point: &Coordinate) -> &Node {

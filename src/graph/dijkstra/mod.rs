@@ -110,10 +110,12 @@ impl<'a> Dijkstra<'a> {
                     n_popped
                 );
                 */
+                /*
                 println!(
                     "Found path with dim_costs {:?} and cost {:?}",
                     costs, total_cost
                 );
+                */
                 let edges = self.make_edge_path(node_id);
                 Some(DijkstraResult {
                     edges,
@@ -148,7 +150,7 @@ impl<'a> Dijkstra<'a> {
             previous = &mut self.previous_b;
         };
 
-        if total_cost > my_costs[node_id].1 {
+        if *found_best || total_cost > my_costs[node_id].1 {
             return;
         };
         if total_cost > self.best_node.2 {

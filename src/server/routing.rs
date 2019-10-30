@@ -5,6 +5,7 @@ use crate::helpers::{Coordinate, Preference};
 
 use super::AppState;
 use crate::config::get_config;
+use crate::RuntimeTracker;
 use actix_web::web::Path;
 
 #[derive(Deserialize)]
@@ -127,7 +128,9 @@ pub fn find_preference(
                         .find_shortest_path_alt(id, body.waypoints, body.alpha)
                         .unwrap();
 
-                    graph.find_preference(&mut route);
+                    let mut tracker = RuntimeTracker::default();
+                    tracker.subpath_times.push(Vec::new());
+                    graph.find_preference(&mut route, &mut tracker, 0);
                     if id == 0 {
                         user.add_route(&mut route);
                     } else {
